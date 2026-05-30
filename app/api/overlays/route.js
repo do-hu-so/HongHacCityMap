@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+// Force Next.js to run this route dynamically (never cache GET requests on Edge CDN)
+export const dynamic = "force-dynamic";
+
 // Conditional import to prevent failure during build if BLOB token is not set
-// but `@vercel/blob` is in dependencies.
 let blobLib = null;
 try {
   blobLib = await import("@vercel/blob");
@@ -20,23 +22,28 @@ function isBlobConfigured() {
 export async function GET() {
   try {
     if (isBlobConfigured()) {
-      // 1. Production Mode: Fetch from Vercel Blob
       console.log("Vercel Blob detected. Fetching overlays from blob storage...");
       const { list } = blobLib;
       const { blobs } = await list();
-      const overlaysBlob = blobs.find(b => b.pathname === "overlays.json");
+      
+      // Filter all blobs matching "overlays.json"
+      const overlaysBlobs = blobs.filter(b => b.pathname === "overlays.json");
 
-      if (overlaysBlob) {
-        // Fetch blob content
-        const res = await fetch(overlaysBlob.url, { cache: "no-store" });
+      if (overlaysBlobs.length > 0) {
+        // Sort by uploadedAt descending to get the absolute newest version
+        overlaysBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+        const newestBlob = overlaysBlobs[0];
+        
+        console.log(`Fetching newest blob: ${newestBlob.url} (Uploaded at: ${newestBlob.uploadedAt})`);
+        const res = await fetch(newestBlob.url, { cache: "no-store" });
         if (res.ok) {
           const data = await res.json();
           return NextResponse.json(data);
         }
       }
 
-      // If blob does not exist yet, initialize it using the local backup static file
-      console.log("Overlays blob not found. Initializing overlays.json in Blob storage...");
+      // If no blob exists yet on Vercel Blob, initialize it using local overlays.json
+      console.log("Overlays blob not found. Initializing Vercel Blob storage with static overlays.json...");
       const localPath = path.join(process.cwd(), "public", "data", "overlays.json");
       const localContent = await readFile(localPath, "utf8");
       const localData = JSON.parse(localContent);
@@ -44,13 +51,12 @@ export async function GET() {
       const { put } = blobLib;
       await put("overlays.json", JSON.stringify(localData, null, 2), {
         access: "public",
-        addRandomSuffix: false
       });
 
       return NextResponse.json(localData);
     } else {
-      // 2. Development Mode: Fetch from local filesystem
-      console.log("Vercel Blob token not set. Fetching overlays from local filesystem...");
+      // Development Mode: Use local overlays.json
+      console.log("Vercel Blob token not set. Reading overlays from local filesystem...");
       const localPath = path.join(process.cwd(), "public", "data", "overlays.json");
       const localContent = await readFile(localPath, "utf8");
       const localData = JSON.parse(localContent);
@@ -71,16 +77,30 @@ export async function POST(request) {
     const data = await request.json();
 
     if (isBlobConfigured()) {
-      // 1. Production Mode: Save to Vercel Blob
       console.log("Saving overlays to Vercel Blob...");
-      const { put } = blobLib;
-      await put("overlays.json", JSON.stringify(data, null, 2), {
+      const { put, list, del } = blobLib;
+      
+      // 1. Upload new overlays.json. Using random suffix (default) is critical to bust Edge and browser cache.
+      const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
         access: "public",
-        addRandomSuffix: false
       });
+      console.log(`Saved new overlays blob at: ${newBlob.url}`);
+
+      // 2. Clean up old overlays.json blobs asynchronously to free up Vercel storage space
+      try {
+        const { blobs } = await list();
+        const oldBlobs = blobs.filter(b => b.pathname === "overlays.json" && b.url !== newBlob.url);
+        if (oldBlobs.length > 0) {
+          console.log(`Deleting ${oldBlobs.length} stale overlays blobs...`);
+          await del(oldBlobs.map(b => b.url));
+        }
+      } catch (delError) {
+        console.warn("Failed to delete stale overlays blobs (non-fatal):", delError.message);
+      }
+
       return NextResponse.json({ success: true });
     } else {
-      // 2. Development Mode: Save to local filesystem
+      // Development Mode: Save directly to local filesystem overlays.json
       console.log("Saving overlays to local filesystem...");
       const localPath = path.join(process.cwd(), "public", "data", "overlays.json");
       await writeFile(localPath, JSON.stringify(data, null, 2) + "\n", "utf8");
