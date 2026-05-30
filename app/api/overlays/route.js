@@ -22,8 +22,8 @@ export async function GET() {
       console.log("Vercel Blob detected. Fetching overlays from blob storage...");
       const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
       
-      // Filter all blobs ending with "overlays.json" (more robust than exact match)
-      const overlaysBlobs = blobs.filter(b => b.pathname.endsWith("overlays.json"));
+      // Filter all blobs starting with "overlays" and ending with ".json" (robust to random suffixes)
+      const overlaysBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json"));
 
       if (overlaysBlobs.length > 0) {
         // Sort by uploadedAt descending to get the absolute newest version
@@ -32,12 +32,8 @@ export async function GET() {
         
         console.log(`Fetching newest blob: ${newestBlob.url} (Uploaded at: ${newestBlob.uploadedAt})`);
         
-        // Fetch private blob using the authorization token
-        const headers = {
-          Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
-        };
+        // Fetch public blob directly
         const res = await fetch(newestBlob.url, { 
-          headers,
           cache: "no-store" 
         });
         
