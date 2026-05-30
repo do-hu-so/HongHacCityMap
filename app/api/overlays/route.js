@@ -49,6 +49,33 @@ export async function GET() {
         }
       }
 
+      // Check if a newer KML convert was deployed (bundled initial-overlays.json is newer)
+      if (data && initialData._convertedAt) {
+        const blobTime = data._convertedAt ? new Date(data._convertedAt).getTime() : 0;
+        const initialTime = new Date(initialData._convertedAt).getTime();
+
+        if (initialTime > blobTime) {
+          console.log(`Newer KML convert detected (${initialData._convertedAt} > ${data._convertedAt || 'none'}). Syncing blob...`);
+          data = initialData;
+
+          try {
+            // Delete all old overlay blobs
+            if (overlaysBlobs.length > 0) {
+              await del(overlaysBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });
+            }
+            // Upload new merged data
+            await put("overlays.json", JSON.stringify(data, null, 2), {
+              access: "public",
+              addRandomSuffix: true,
+              token: process.env.BLOB_READ_WRITE_TOKEN,
+            });
+            console.log("Blob storage updated with converted data.");
+          } catch (syncError) {
+            console.warn("Failed to sync blob with converted data:", syncError.message);
+          }
+        }
+      }
+
       // If no blob exists yet on Vercel Blob, initialize it using our bundled initialData
       if (!data) {
         console.log("Overlays blob not found in store. Initializing Vercel Blob storage with static initial-overlays.json...");

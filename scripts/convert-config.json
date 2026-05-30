@@ -3,5 +3,6 @@
   "geojsonOutputPath": "public/data/map-cache.geojson",
   "overlaysPath": "public/data/overlays.json",
   "backupDir": "public/data/backup",
-  "featureIdPrefix": "mymaps"
+  "featureIdPrefix": "mymaps",
+  "deployUrl": "https://hong-hac-city-map.vercel.app/"
 }

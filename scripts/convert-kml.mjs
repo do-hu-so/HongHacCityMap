@@ -305,10 +305,28 @@ async function run() {
     }
   }
   
-  if (fs.existsSync(overlaysPath)) {
+  // Try to fetch live overlays from deployed Vercel site (includes all web edits)
+  if (config.deployUrl) {
+    try {
+      const apiUrl = `${config.deployUrl.replace(/\/$/, '')}/api/overlays`;
+      console.log(`Fetching live overlays from ${apiUrl} ...`);
+      const res = await fetch(apiUrl);
+      if (res.ok) {
+        oldOverlays = await res.json();
+        console.log('✅ Fetched live overlays from Vercel (includes all web edits).');
+      } else {
+        console.warn(`⚠️ Failed to fetch live overlays (HTTP ${res.status}). Falling back to local file.`);
+      }
+    } catch (e) {
+      console.warn(`⚠️ Could not connect to deploy URL: ${e.message}. Falling back to local file.`);
+    }
+  }
+  
+  // Fall back to local overlays file
+  if (!oldOverlays && fs.existsSync(overlaysPath)) {
     try {
       oldOverlays = JSON.parse(fs.readFileSync(overlaysPath, 'utf8'));
-      console.log('Loaded old overlays.json.');
+      console.log('Loaded old overlays from local file.');
     } catch (e) {
       console.warn(`Could not parse old overlays.json: ${e.message}`);
     }
@@ -337,7 +355,8 @@ async function run() {
   const newOverlays = {
     objectInfo: {},
     myMapsStyles: {},
-    textLabels: (oldOverlays && oldOverlays.textLabels) ? oldOverlays.textLabels : []
+    textLabels: (oldOverlays && oldOverlays.textLabels) ? oldOverlays.textLabels : [],
+    _convertedAt: new Date().toISOString()
   };
   
   let mergedCount = 0;
@@ -420,6 +439,11 @@ async function run() {
   
   fs.writeFileSync(overlaysPath, JSON.stringify(newOverlays, null, 2), 'utf8');
   console.log(`Saved new overlays JSON to ${overlaysPath}`);
+  
+  // Also update initial-overlays.json (bundled on next Vercel deploy)
+  const initialOverlaysPath = path.resolve('app/api/overlays/initial-overlays.json');
+  fs.writeFileSync(initialOverlaysPath, JSON.stringify(newOverlays, null, 2), 'utf8');
+  console.log(`Updated initial-overlays.json for next Vercel deploy.`);
   
   console.log(`--- KML Converter Finished Successfully ---`);
 }
