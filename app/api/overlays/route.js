@@ -88,7 +88,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error in GET /api/overlays:", error);
     const token = process.env.BLOB_READ_WRITE_TOKEN || "";
-    const tokenDebug = token ? `${token.substring(0, 12)}... (len: ${token.length})` : "none";
+    const tokenDebug = token ? `${token.substring(0, 30)}... (len: ${token.length})` : "none";
     return NextResponse.json(
       { success: false, error: error.message, debug: { token: tokenDebug } },
       { status: 500 }
@@ -149,7 +149,7 @@ export async function POST(request) {
   } catch (error) {
     console.error("Error in POST /api/overlays:", error);
     const token = process.env.BLOB_READ_WRITE_TOKEN || "";
-    const tokenDebug = token ? `${token.substring(0, 12)}... (len: ${token.length})` : "none";
+    const tokenDebug = token ? `${token.substring(0, 30)}... (len: ${token.length})` : "none";
     return NextResponse.json(
       { success: false, error: error.message, debug: { token: tokenDebug } },
       { status: 500 }
