@@ -1,21 +1,14 @@
 import { NextResponse } from "next/server";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { put, list, del } from "@vercel/blob";
 
 // Force Next.js to run this route dynamically (never cache GET requests on Edge CDN)
 export const dynamic = "force-dynamic";
 
-// Conditional import to prevent failure during build if BLOB token is not set
-let blobLib = null;
-try {
-  blobLib = await import("@vercel/blob");
-} catch (e) {
-  console.warn("Failed to load @vercel/blob package: ", e.message);
-}
-
 // Helper to check if Vercel Blob is configured
 function isBlobConfigured() {
-  return !!(process.env.BLOB_READ_WRITE_TOKEN && blobLib);
+  return !!process.env.BLOB_READ_WRITE_TOKEN;
 }
 
 // GET method
@@ -23,7 +16,6 @@ export async function GET() {
   try {
     if (isBlobConfigured()) {
       console.log("Vercel Blob detected. Fetching overlays from blob storage...");
-      const { list } = blobLib;
       const { blobs } = await list();
       
       // Filter all blobs matching "overlays.json"
@@ -48,7 +40,6 @@ export async function GET() {
       const localContent = await readFile(localPath, "utf8");
       const localData = JSON.parse(localContent);
 
-      const { put } = blobLib;
       await put("overlays.json", JSON.stringify(localData, null, 2), {
         access: "public",
       });
@@ -78,7 +69,6 @@ export async function POST(request) {
 
     if (isBlobConfigured()) {
       console.log("Saving overlays to Vercel Blob...");
-      const { put, list, del } = blobLib;
       
       // 1. Upload new overlays.json. Using random suffix (default) is critical to bust Edge and browser cache.
       const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
