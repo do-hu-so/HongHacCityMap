@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { put, list, del } from "@vercel/blob";
+import initialData from "./initial-overlays.json";
 
 // Force Next.js to run this route dynamically (never cache GET requests on Edge CDN)
 export const dynamic = "force-dynamic";
@@ -36,23 +37,26 @@ export async function GET() {
         }
       }
 
-      // If no blob exists yet on Vercel Blob, initialize it using local overlays.json
+      // If no blob exists yet on Vercel Blob, initialize it using our bundled initialData
       if (!data) {
-        console.log("Overlays blob not found. Initializing Vercel Blob storage with static overlays.json...");
-        const localPath = path.join(process.cwd(), "public", "data", "overlays.json");
-        const localContent = await readFile(localPath, "utf8");
-        data = JSON.parse(localContent);
+        console.log("Overlays blob not found. Initializing Vercel Blob storage with static initial-overlays.json...");
+        data = initialData;
 
         await put("overlays.json", JSON.stringify(data, null, 2), {
           access: "public",
         });
       }
     } else {
-      // Development Mode: Use local overlays.json
+      // Development Mode: Read from local filesystem to allow live changes from convert script
       console.log("Vercel Blob token not set. Reading overlays from local filesystem...");
-      const localPath = path.join(process.cwd(), "public", "data", "overlays.json");
-      const localContent = await readFile(localPath, "utf8");
-      data = JSON.parse(localContent);
+      try {
+        const localPath = path.join(process.cwd(), "public", "data", "overlays.json");
+        const localContent = await readFile(localPath, "utf8");
+        data = JSON.parse(localContent);
+      } catch (err) {
+        console.warn("Local overlays.json not found, using bundled initialData instead.");
+        data = initialData;
+      }
     }
 
     const response = NextResponse.json(data);
