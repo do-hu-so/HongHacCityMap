@@ -44,17 +44,19 @@ export async function GET() {
         if (res.ok) {
           data = await res.json();
         } else {
-          console.warn(`Failed to fetch blob directly (Status: ${res.status}). Trying fallback.`);
+          // Instead of silently overwriting the blob, throw an error so we know why it failed
+          throw new Error(
+            `Failed to fetch overlays.json from Vercel Blob (Status: ${res.status}). ` +
+            `This usually happens if the Vercel Blob store is set to Private. ` +
+            `Please change the Blob Store file access settings on Vercel Dashboard to 'Public' so files can be fetched directly.`
+          );
         }
-      }
-
-      // If no blob exists yet on Vercel Blob, initialize it using our bundled initialData
-      if (!data) {
-        console.log("Overlays blob not found. Initializing Vercel Blob storage with static initial-overlays.json...");
+      } else {
+        // Only initialize if there are NO blobs at all in the store
+        console.log("Overlays blob not found in store. Initializing Vercel Blob storage with static initial-overlays.json...");
         data = initialData;
 
-        // Use access: "private" to support both private and public Vercel Blob stores
-        // Explicitly set addRandomSuffix: true to resolve overwrite conflicts
+        // Use access: "private" to remain compatible with private stores, or public if they switch to public
         await put("overlays.json", JSON.stringify(data, null, 2), {
           access: "private",
           addRandomSuffix: true,
