@@ -58,9 +58,9 @@ export async function GET() {
         console.log("Overlays blob not found in store. Initializing Vercel Blob storage with static initial-overlays.json...");
         data = initialData;
 
-        // Use access: "private" to remain compatible with private stores, or public if they switch to public
+        // Use access: "public" for the user's public Vercel Blob store
         await put("overlays.json", JSON.stringify(data, null, 2), {
-          access: "private",
+          access: "public",
           addRandomSuffix: true,
         });
       }
@@ -107,7 +107,7 @@ export async function POST(request) {
       // Use access: "private" to remain compatible with private stores.
       // Explicitly set addRandomSuffix: true to prevent "This blob already exists" error.
       const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
-        access: "private",
+        access: "public",
         addRandomSuffix: true,
       });
       console.log(`Saved new overlays blob at: ${newBlob.url}`);
