@@ -31,9 +31,20 @@ export async function GET() {
         const newestBlob = overlaysBlobs[0];
         
         console.log(`Fetching newest blob: ${newestBlob.url} (Uploaded at: ${newestBlob.uploadedAt})`);
-        const res = await fetch(newestBlob.url, { cache: "no-store" });
+        
+        // Fetch private blob using the authorization token
+        const headers = {
+          Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`
+        };
+        const res = await fetch(newestBlob.url, { 
+          headers,
+          cache: "no-store" 
+        });
+        
         if (res.ok) {
           data = await res.json();
+        } else {
+          console.warn(`Failed to fetch blob directly (Status: ${res.status}). Trying fallback.`);
         }
       }
 
@@ -42,8 +53,9 @@ export async function GET() {
         console.log("Overlays blob not found. Initializing Vercel Blob storage with static initial-overlays.json...");
         data = initialData;
 
+        // Use access: "private" to support both private and public Vercel Blob stores
         await put("overlays.json", JSON.stringify(data, null, 2), {
-          access: "public",
+          access: "private",
         });
       }
     } else {
@@ -86,8 +98,9 @@ export async function POST(request) {
       console.log("Saving overlays to Vercel Blob...");
       
       // 1. Upload new overlays.json. Using random suffix (default) is critical to bust Edge and browser cache.
+      // Use access: "private" to remain compatible with private stores.
       const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
-        access: "public",
+        access: "private",
       });
       console.log(`Saved new overlays blob at: ${newBlob.url}`);
 
