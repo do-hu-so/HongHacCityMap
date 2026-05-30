@@ -248,8 +248,10 @@ export default function MapView({
       if (mode === "settings") {
         marker.on("dragend", (e) => {
           const pos = e.target.getLatLng();
-          const newLabels = (overlays.textLabels || []).map((l) =>
-            l.id === label.id ? { ...l, position: [pos.lat, pos.lng] } : l
+          const currentLabels = textLabelsDataRef.current || [];
+          const currentLabel = currentLabels.find((l) => l.id === label.id) || label;
+          const newLabels = currentLabels.map((l) =>
+            l.id === label.id ? { ...currentLabel, position: [pos.lat, pos.lng] } : l
           );
           onOverlaysChange({ ...overlays, textLabels: newLabels });
         });
@@ -457,10 +459,13 @@ export default function MapView({
     }
 
     if (selectedFeature.type === "textLabel") {
+      const latestLabel = overlays?.textLabels?.find(
+        (l) => l.id === selectedFeature.data.id
+      ) || selectedFeature.data;
       return {
-        id: selectedFeature.data.id,
+        id: latestLabel.id,
         type: "textLabel",
-        data: selectedFeature.data,
+        data: latestLabel,
       };
     }
 
