@@ -1,0 +1,61 @@
+{
+  "objectInfo": {
+    "mymaps-3459": {
+      "title": "Cầu Nhật Tân",
+      "description": "Dài: .... km\nThời gian đi: .... phút ",
+      "images": [
+        {
+          "src": "https://lh3.googleusercontent.com/d/1T98Ci5LB09lto1M9barh3UE7TAX4Mt5y",
+          "caption": "cầu nhật tân"
+        },
+        {
+          "src": "https://lh3.googleusercontent.com/d/1T98Ci5LB09lto1M9barh3UE7TAX4Mt5y",
+          "caption": "iiiii"
+        },
+        {
+          "src": "https://lh3.googleusercontent.com/d/1kXAimyz3Eu4J464hGwM5L25efLs60RwC",
+          "caption": "aaaa"
+        }
+      ]
+    },
+    "mymaps-3468": {
+      "title": "Cao Tốc Hà Nôi - Sân bay Gia Bình",
+      "description": "Từ nút giao vành đai 4 đến sân bay Gia Bình\nDài : .... Km\nThời gian: .... Phút",
+      "images": []
+    },
+    "mymaps-3469": {
+      "title": "Cao tốc Hà Nội - Sân bay Gia bình ",
+      "description": "Hà nội tới nút giao vành đai 4\nDài: .... (km)\nThời gian: .... (phút)\n",
+      "images": []
+    }
+  },
+  "myMapsStyles": {
+    "mymaps-3459": {
+      "stroke": "#e65100",
+      "strokeWidth": 7.2
+    },
+    "mymaps-3468": {
+      "stroke": "#ffd600",
+      "strokeWidth": 7.781
+    },
+    "mymaps-3469": {
+      "stroke": "#ffd600",
+      "strokeWidth": 7.006
+    }
+  },
+  "textLabels": [
+    {
+      "id": "label-1780068829537",
+      "text": "Đường Vành Đai 1",
+      "position": [
+        21.034759354578927,
+        105.85782051086427
+      ],
+      "fontSize": 83,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 63
+    }
+  ]
+}

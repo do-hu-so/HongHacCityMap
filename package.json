@@ -1,0 +1,25 @@
+{
+  "name": "honghac-map-new",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "convert": "node scripts/convert-kml.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.4.0",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.16",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.5.16"
+  }
+}
