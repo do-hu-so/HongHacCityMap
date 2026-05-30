@@ -54,8 +54,10 @@ export async function GET() {
         data = initialData;
 
         // Use access: "private" to support both private and public Vercel Blob stores
+        // Explicitly set addRandomSuffix: true to resolve overwrite conflicts
         await put("overlays.json", JSON.stringify(data, null, 2), {
           access: "private",
+          addRandomSuffix: true,
         });
       }
     } else {
@@ -99,8 +101,10 @@ export async function POST(request) {
       
       // 1. Upload new overlays.json. Using random suffix (default) is critical to bust Edge and browser cache.
       // Use access: "private" to remain compatible with private stores.
+      // Explicitly set addRandomSuffix: true to prevent "This blob already exists" error.
       const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
         access: "private",
+        addRandomSuffix: true,
       });
       console.log(`Saved new overlays blob at: ${newBlob.url}`);
 

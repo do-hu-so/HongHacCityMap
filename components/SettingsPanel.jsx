@@ -429,7 +429,7 @@ function GeoJsonEditor({ info, overlays, onSave, onClose }) {
                   <label>Danh sách ảnh trong folder `image`:</label>
                   {localImages.length === 0 ? (
                     <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontStyle: "italic", marginBottom: "8px" }}>
-                      Chưa có ảnh nào trong thư mục `G:\HONGHAC\map\new_project\image` hoặc folder trống.
+                      Chưa có ảnh nào trong thư mục `image` của dự án hoặc folder trống.
                     </div>
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "150px", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "4px", padding: "6px", background: "var(--bg-primary)" }}>

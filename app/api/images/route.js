@@ -4,7 +4,7 @@ import path from "node:path";
 
 export async function GET() {
   try {
-    const localImageDir = "g:\\HONGHAC\\map\\new_project\\image";
+    const localImageDir = path.join(process.cwd(), "image");
     // Check files in G:\HONGHAC\map\new_project\image
     let files = [];
     try {
@@ -32,7 +32,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "Filename required" }, { status: 400 });
     }
 
-    const sourcePath = path.join("g:\\HONGHAC\\map\\new_project\\image", filename);
+    const sourcePath = path.join(process.cwd(), "image", filename);
     const destDir = path.join(process.cwd(), "public", "images");
     const destPath = path.join(destDir, filename);
 
