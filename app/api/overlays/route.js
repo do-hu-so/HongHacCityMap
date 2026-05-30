@@ -20,7 +20,7 @@ export async function GET() {
 
     if (blobConfigured) {
       console.log("Vercel Blob detected. Fetching overlays from blob storage...");
-      const { blobs } = await list();
+      const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
       
       // Filter all blobs ending with "overlays.json" (more robust than exact match)
       const overlaysBlobs = blobs.filter(b => b.pathname.endsWith("overlays.json"));
@@ -62,6 +62,7 @@ export async function GET() {
         await put("overlays.json", JSON.stringify(data, null, 2), {
           access: "public",
           addRandomSuffix: true,
+          token: process.env.BLOB_READ_WRITE_TOKEN,
         });
       }
     } else {
@@ -111,16 +112,17 @@ export async function POST(request) {
       const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
         access: "public",
         addRandomSuffix: true,
+        token: process.env.BLOB_READ_WRITE_TOKEN,
       });
       console.log(`Saved new overlays blob at: ${newBlob.url}`);
 
       // 2. Clean up old overlays.json blobs asynchronously to free up Vercel storage space
       try {
-        const { blobs } = await list();
+        const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
         const oldBlobs = blobs.filter(b => b.pathname.endsWith("overlays.json") && b.url !== newBlob.url);
         if (oldBlobs.length > 0) {
           console.log(`Deleting ${oldBlobs.length} stale overlays blobs...`);
-          await del(oldBlobs.map(b => b.url));
+          await del(oldBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });
         }
       } catch (delError) {
         console.warn("Failed to delete stale overlays blobs (non-fatal):", delError.message);
