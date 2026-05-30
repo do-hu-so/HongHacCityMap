@@ -51,8 +51,10 @@ export async function GET() {
             `Please change the Blob Store file access settings on Vercel Dashboard to 'Public' so files can be fetched directly.`
           );
         }
-      } else {
-        // Only initialize if there are NO blobs at all in the store
+      }
+
+      // If no blob exists yet on Vercel Blob, initialize it using our bundled initialData
+      if (!data) {
         console.log("Overlays blob not found in store. Initializing Vercel Blob storage with static initial-overlays.json...");
         data = initialData;
 
@@ -122,6 +124,16 @@ export async function POST(request) {
         console.warn("Failed to delete stale overlays blobs (non-fatal):", delError.message);
       }
     } else {
+      // If we are on Vercel, we cannot write to the read-only filesystem.
+      // Throw a helpful error instead of letting it fail with EROFS.
+      if (process.env.VERCEL === "1" || process.env.NODE_ENV === "production") {
+        throw new Error(
+          "Vercel Blob token (BLOB_READ_WRITE_TOKEN) is not detected in your Vercel deployment. " +
+          "This deployment was likely built before the database was connected. " +
+          "Please trigger a 'Redeploy' of your latest deployment on the Vercel Dashboard to apply the database token."
+        );
+      }
+
       // Development Mode: Save directly to local filesystem overlays.json
       console.log("Saving overlays to local filesystem...");
       const localPath = path.join(process.cwd(), "public", "data", "overlays.json");
