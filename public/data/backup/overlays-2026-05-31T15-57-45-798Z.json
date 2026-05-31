@@ -1,0 +1,105 @@
+{
+  "objectInfo": {
+    "mymaps-3459": {
+      "title": "Cầu Nhật Tân",
+      "description": "Dài: .... km\nThời gian đi: .... phút ",
+      "images": [
+        {
+          "src": "https://lh3.googleusercontent.com/d/1T98Ci5LB09lto1M9barh3UE7TAX4Mt5y",
+          "caption": "cầu nhật tân"
+        },
+        {
+          "src": "https://lh3.googleusercontent.com/d/1T98Ci5LB09lto1M9barh3UE7TAX4Mt5y",
+          "caption": "iiiii"
+        },
+        {
+          "src": "https://lh3.googleusercontent.com/d/1kXAimyz3Eu4J464hGwM5L25efLs60RwC",
+          "caption": "aaaa"
+        }
+      ]
+    },
+    "mymaps-3468": {
+      "title": "Cao Tốc Hà Nôi - Sân bay Gia Bình",
+      "description": "Từ nút giao vành đai 4 đến sân bay Gia Bình\nDài : .... Km\nThời gian: .... Phút",
+      "images": []
+    },
+    "mymaps-3469": {
+      "title": "Cao tốc Hà Nội - Sân bay Gia bình ",
+      "description": "Hà nội tới nút giao vành đai 4\nDài: .... (km)\nThời gian: .... (phút)\n",
+      "images": []
+    },
+    "mymaps-3451": {
+      "title": "Đường Vành Đai 1",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3449": {
+      "title": "Đường Vành Đai 3",
+      "description": "",
+      "images": []
+    }
+  },
+  "myMapsStyles": {
+    "mymaps-3459": {
+      "stroke": "#e65100",
+      "strokeWidth": 7.2
+    },
+    "mymaps-3468": {
+      "stroke": "#ffd600",
+      "strokeWidth": 7.781
+    },
+    "mymaps-3469": {
+      "stroke": "#ffd600",
+      "strokeWidth": 7.006
+    },
+    "mymaps-3451": {
+      "stroke": "#097138",
+      "strokeWidth": 2.938
+    },
+    "mymaps-3449": {
+      "stroke": "#7cb342",
+      "strokeWidth": 4.488
+    }
+  },
+  "textLabels": [
+    {
+      "id": "label-1780068829537",
+      "text": "Đường Vành Đai 1",
+      "position": [
+        21.030833855264525,
+        105.81653594970705
+      ],
+      "fontSize": 137,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 32
+    },
+    {
+      "id": "label-1780162139305",
+      "text": "Cao tốc Sân bay Gia Bình (HN-nút giao vành đai 4)",
+      "position": [
+        21.073608206025916,
+        105.97343444824219
+      ],
+      "fontSize": 148,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 13
+    },
+    {
+      "id": "label-1780162350785",
+      "text": "Sân Bay Gia Bình",
+      "position": [
+        21.033397458369187,
+        106.17033004760744
+      ],
+      "fontSize": 122,
+      "zoomBase": 14,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -19
+    }
+  ]
+}
