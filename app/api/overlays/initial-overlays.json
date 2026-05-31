@@ -1,5 +1,10 @@
 {
   "objectInfo": {
+    "mymaps-264": {
+      "title": "Quốc Lộ 17",
+      "description": "",
+      "images": []
+    },
     "mymaps-3442": {
       "title": "KCN Gia Bình",
       "description": "",
@@ -162,6 +167,10 @@
     }
   },
   "myMapsStyles": {
+    "mymaps-264": {
+      "stroke": "#eda29b",
+      "strokeWidth": 3.5
+    },
     "mymaps-3442": {
       "stroke": "#f57c00",
       "strokeWidth": 1.2,
@@ -574,7 +583,20 @@
       "color": "#1f2937",
       "scaleWithZoom": true,
       "rotation": 69
+    },
+    {
+      "id": "label-1780243197180",
+      "text": "Quốc Lộ 17",
+      "position": [
+        21.034519020858237,
+        105.98819732666017
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -13
     }
   ],
-  "_convertedAt": "2026-05-31T15:57:46.023Z"
+  "_convertedAt": "2026-05-31T17:52:42.060Z"
 }

@@ -1,0 +1,580 @@
+{
+  "objectInfo": {
+    "mymaps-3442": {
+      "title": "KCN Gia Bình",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3443": {
+      "title": "KCN Thuận Thành 3",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3444": {
+      "title": "KCN Thuận Thành 2",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3446": {
+      "title": "KCN Thuận Thành 1",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3447": {
+      "title": "KCN Đại Đồng",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3448": {
+      "title": "KCN Tiên Sơn",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3449": {
+      "title": "KCN Ninh Hiệp - Sài Đồng",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3450": {
+      "title": "Đường Vành Đai 3",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3451": {
+      "title": "Đường Vành Đai 2",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3452": {
+      "title": "Đường Vành Đai 1",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3453": {
+      "title": "Đường Vành Đai 2.5",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3454": {
+      "title": "Đường Vành Đai 4",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3455": {
+      "title": "Đường Vành Đai 4",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3457": {
+      "title": "Cầu Vĩnh Tuy",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3458": {
+      "title": "Cầu Chương Dương",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3460": {
+      "title": "Cầu Nhật Tân",
+      "description": "Dài: .... km\nThời gian đi: .... phút ",
+      "images": []
+    },
+    "mymaps-3461": {
+      "title": "Cầu Thăng Long",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3462": {
+      "title": "Cầu Tứ Liên",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3463": {
+      "title": "Cầu Trần Hưng Đạo",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3464": {
+      "title": "Cầu Tứ Liên",
+      "description": "Đang hoàn thiện",
+      "images": []
+    },
+    "mymaps-3465": {
+      "title": "Cầu Trần Hưng Đạo",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3468": {
+      "title": "Quốc Lộ 1A",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3469": {
+      "title": "Cao Tốc Hà Nôi - Sân bay Gia Bình",
+      "description": "Từ nút giao vành đai 4 đến sân bay Gia Bình\nDài : .... Km\nThời gian: .... Phút",
+      "images": []
+    },
+    "mymaps-3470": {
+      "title": "Cao tốc Hà Nội - Sân bay Gia bình ",
+      "description": "Hà nội tới nút giao vành đai 4\nDài: .... (km)\nThời gian: .... (phút)\n",
+      "images": []
+    },
+    "mymaps-3471": {
+      "title": "Cao Tốc Sân Bay Gia Bình - Hải Phòng",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3474": {
+      "title": "Sân Bay Cát Bi",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3475": {
+      "title": "Siêu Ga Ngọc Hồi",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3476": {
+      "title": "Cầu Ngọc Hồi",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3477": {
+      "title": "KCN Quế Võ 1",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3478": {
+      "title": "KCN Quế Võ 2",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3479": {
+      "title": "KCN Quế Võ 3",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3480": {
+      "title": "KCN Yên Phong",
+      "description": "",
+      "images": []
+    }
+  },
+  "myMapsStyles": {
+    "mymaps-3442": {
+      "stroke": "#f57c00",
+      "strokeWidth": 1.2,
+      "fill": "#f57c00",
+      "fillOpacity": 0.6392
+    },
+    "mymaps-3443": {
+      "stroke": "#7cb342",
+      "strokeWidth": 1.2,
+      "fill": "#7cb342",
+      "fillOpacity": 0.8706
+    },
+    "mymaps-3444": {
+      "stroke": "#7cb342",
+      "strokeWidth": 1.2,
+      "fill": "#7cb342",
+      "fillOpacity": 0.9412
+    },
+    "mymaps-3446": {
+      "stroke": "#ffff8d",
+      "strokeWidth": 1.2,
+      "fill": "#ffff8d",
+      "fillOpacity": 0.8588
+    },
+    "mymaps-3447": {
+      "stroke": "#01579b",
+      "strokeWidth": 1.2,
+      "fill": "#01579b",
+      "fillOpacity": 0.7686
+    },
+    "mymaps-3448": {
+      "stroke": "#a1c2fa",
+      "strokeWidth": 1.2,
+      "fill": "#a1c2fa",
+      "fillOpacity": 0.9098
+    },
+    "mymaps-3449": {
+      "stroke": "#9fa8da",
+      "strokeWidth": 1.2,
+      "fill": "#9fa8da",
+      "fillOpacity": 0.9098
+    },
+    "mymaps-3450": {
+      "stroke": "#7cb342",
+      "strokeWidth": 4.488
+    },
+    "mymaps-3451": {
+      "stroke": "#eda29b",
+      "strokeWidth": 4.1
+    },
+    "mymaps-3452": {
+      "stroke": "#097138",
+      "strokeWidth": 2.938
+    },
+    "mymaps-3453": {
+      "stroke": "#7cb342",
+      "strokeWidth": 1.581
+    },
+    "mymaps-3454": {
+      "stroke": "#e65100",
+      "strokeWidth": 5.069
+    },
+    "mymaps-3455": {
+      "stroke": "#e65100",
+      "strokeWidth": 5.263
+    },
+    "mymaps-3457": {
+      "stroke": "#e65100",
+      "strokeWidth": 6.619
+    },
+    "mymaps-3458": {
+      "stroke": "#e65100",
+      "strokeWidth": 3.325
+    },
+    "mymaps-3460": {
+      "stroke": "#e65100",
+      "strokeWidth": 7.2
+    },
+    "mymaps-3461": {
+      "stroke": "#e65100",
+      "strokeWidth": 6.038
+    },
+    "mymaps-3462": {
+      "stroke": "#1a237e",
+      "strokeWidth": 2.356
+    },
+    "mymaps-3463": {
+      "stroke": "#000000",
+      "strokeWidth": 2.744
+    },
+    "mymaps-3464": {
+      "stroke": "#f50000",
+      "strokeWidth": 1.301,
+      "fill": "#00f531",
+      "fillOpacity": 0.1412,
+      "dashArray": "10 16"
+    },
+    "mymaps-3465": {
+      "stroke": "#ff0000",
+      "strokeWidth": 1.2,
+      "fill": "#2fff05",
+      "fillOpacity": 0.1412,
+      "dashArray": "17 30"
+    },
+    "mymaps-3468": {
+      "stroke": "#e65100",
+      "strokeWidth": 4.1
+    },
+    "mymaps-3469": {
+      "stroke": "#ffd600",
+      "strokeWidth": 7.781
+    },
+    "mymaps-3470": {
+      "stroke": "#ffd600",
+      "strokeWidth": 7.006
+    },
+    "mymaps-3471": {
+      "stroke": "#ffd600",
+      "strokeWidth": 7.006
+    },
+    "mymaps-3474": {
+      "stroke": "#ffd600",
+      "strokeWidth": 1.2,
+      "fill": "#ffd600",
+      "fillOpacity": 0.251
+    },
+    "mymaps-3475": {
+      "stroke": "#ff0000",
+      "strokeWidth": 3.201,
+      "fill": "#80ff00",
+      "fillOpacity": 0.3882,
+      "dashArray": "6 10"
+    },
+    "mymaps-3476": {
+      "stroke": "#f50000",
+      "strokeWidth": 1.2,
+      "fill": "#4ef500",
+      "fillOpacity": 0.302,
+      "dashArray": "12 17"
+    },
+    "mymaps-3477": {
+      "stroke": "#9c27b0",
+      "strokeWidth": 1.2,
+      "fill": "#9c27b0",
+      "fillOpacity": 0.7804
+    },
+    "mymaps-3478": {
+      "stroke": "#9c27b0",
+      "strokeWidth": 1.2,
+      "fill": "#9c27b0",
+      "fillOpacity": 0.8706
+    },
+    "mymaps-3479": {
+      "stroke": "#9c27b0",
+      "strokeWidth": 1.2,
+      "fill": "#9c27b0",
+      "fillOpacity": 0.8392
+    },
+    "mymaps-3480": {
+      "stroke": "#f48fb1",
+      "strokeWidth": 1.2,
+      "fill": "#f48fb1",
+      "fillOpacity": 0.851
+    }
+  },
+  "textLabels": [
+    {
+      "id": "label-1780068829537",
+      "text": "Đường Vành Đai 1",
+      "position": [
+        21.030833855264525,
+        105.81653594970705
+      ],
+      "fontSize": 137,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 32
+    },
+    {
+      "id": "label-1780162139305",
+      "text": "Cao tốc Sân bay Gia Bình ",
+      "position": [
+        21.065919341488122,
+        105.97240447998047
+      ],
+      "fontSize": 148,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 13
+    },
+    {
+      "id": "label-1780162350785",
+      "text": "Sân Bay Gia Bình",
+      "position": [
+        21.035480353414883,
+        106.17771148681642
+      ],
+      "fontSize": 85,
+      "zoomBase": 14,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -19
+    },
+    {
+      "id": "label-1780169505414",
+      "text": "HỒNG HẠC CITY",
+      "position": [
+        21.00920169858877,
+        105.97206115722656
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 0
+    },
+    {
+      "id": "label-1780172253069",
+      "text": "Đường Vành Đai 3",
+      "position": [
+        21.01737421551212,
+        105.78065872192384
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 55
+    },
+    {
+      "id": "label-1780172506678",
+      "text": "Đường Vành Đai 2",
+      "position": [
+        21.018335658650418,
+        105.79902648925783
+      ],
+      "fontSize": 150,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 43
+    },
+    {
+      "id": "label-1780172556482",
+      "text": "Đường Vành Đai 4",
+      "position": [
+        20.941881605606202,
+        105.7478713989258
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 49
+    },
+    {
+      "id": "label-1780173606675",
+      "text": "Siêu Ga Ngọc Hồi",
+      "position": [
+        20.976907866936983,
+        105.82992553710939
+      ],
+      "fontSize": 136,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 0
+    },
+    {
+      "id": "label-1780174211732",
+      "text": "Cao Tốc Hà Nội - Thái Nguyên",
+      "position": [
+        21.129981056827386,
+        105.89859008789064
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -72
+    },
+    {
+      "id": "label-1780174288528",
+      "text": "Cầu Vĩnh Tuy",
+      "position": [
+        21.003512721534744,
+        105.87103843688966
+      ],
+      "fontSize": 95,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -46
+    },
+    {
+      "id": "label-1780174384147",
+      "text": "Cầu Trần Hưng Đạo",
+      "position": [
+        21.022381663919713,
+        105.86211204528809
+      ],
+      "fontSize": 88,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -40
+    },
+    {
+      "id": "label-1780174574168",
+      "text": "Cầu Chương Dương",
+      "position": [
+        21.037563219340893,
+        105.8540439605713
+      ],
+      "fontSize": 74,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -23
+    },
+    {
+      "id": "label-1780175187183",
+      "text": "Cầu Long Biên",
+      "position": [
+        21.04325089717079,
+        105.85189819335939
+      ],
+      "fontSize": 83,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -23
+    },
+    {
+      "id": "label-1780175364404",
+      "text": "Cầu Tứ Liên",
+      "position": [
+        21.06680037738058,
+        105.84039688110353
+      ],
+      "fontSize": 104,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -39
+    },
+    {
+      "id": "label-1780175497507",
+      "text": "Cầu Nhật Tân",
+      "position": [
+        21.087383093955577,
+        105.81361770629883
+      ],
+      "fontSize": 110,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -66
+    },
+    {
+      "id": "label-1780175556612",
+      "text": "Cầu Thăng Long",
+      "position": [
+        21.091146940059843,
+        105.78293323516846
+      ],
+      "fontSize": 80,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -86
+    },
+    {
+      "id": "label-1780175612852",
+      "text": "Đường Vành Đai 2.5",
+      "position": [
+        20.988207495645607,
+        105.84314346313478
+      ],
+      "fontSize": 150,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 0
+    },
+    {
+      "id": "label-1780175671618",
+      "text": "Cầu Ngọc Hồi",
+      "position": [
+        20.939797404836654,
+        105.86082458496095
+      ],
+      "fontSize": 101,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -6
+    },
+    {
+      "id": "label-1780176289502",
+      "text": "Quốc Lộ 1A",
+      "position": [
+        20.863944849076905,
+        105.87867736816408
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 69
+    }
+  ],
+  "_convertedAt": "2026-05-31T15:57:46.023Z"
+}
