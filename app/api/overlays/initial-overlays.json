@@ -125,11 +125,6 @@
       "description": "Hà nội tới nút giao vành đai 4\nDài: .... (km)\nThời gian: .... (phút)\n",
       "images": []
     },
-    "mymaps-3471": {
-      "title": "Cao Tốc Sân Bay Gia Bình - Hải Phòng",
-      "description": "",
-      "images": []
-    },
     "mymaps-3474": {
       "title": "Sân Bay Cát Bi",
       "description": "",
@@ -145,32 +140,32 @@
       "description": "",
       "images": []
     },
-    "mymaps-3477": {
+    "mymaps-3482": {
       "title": "KCN Quế Võ 1",
       "description": "",
       "images": []
     },
-    "mymaps-3478": {
+    "mymaps-3483": {
       "title": "KCN Quế Võ 2",
       "description": "",
       "images": []
     },
-    "mymaps-3479": {
+    "mymaps-3484": {
       "title": "KCN Quế Võ 3",
       "description": "",
       "images": []
     },
-    "mymaps-3480": {
+    "mymaps-3485": {
       "title": "KCN Yên Phong",
       "description": "",
       "images": []
     },
-    "mymaps-3481": {
+    "mymaps-3486": {
       "title": "Quốc Lộ 5",
       "description": "",
       "images": []
     },
-    "mymaps-3482": {
+    "mymaps-3487": {
       "title": "Quốc Lộ 5B",
       "description": "",
       "images": []
@@ -299,11 +294,6 @@
       "strokeWidth": 2.5,
       "dashArray": "6 7"
     },
-    "mymaps-3471": {
-      "stroke": "#ff0000",
-      "strokeWidth": 4,
-      "dashArray": "6 8"
-    },
     "mymaps-3474": {
       "stroke": "#ffd600",
       "strokeWidth": 1.2,
@@ -324,35 +314,35 @@
       "fillOpacity": 0.302,
       "dashArray": "12 17"
     },
-    "mymaps-3477": {
+    "mymaps-3482": {
       "stroke": "#9c27b0",
       "strokeWidth": 1.2,
       "fill": "#9c27b0",
       "fillOpacity": 0.7804
     },
-    "mymaps-3478": {
+    "mymaps-3483": {
       "stroke": "#9c27b0",
       "strokeWidth": 1.2,
       "fill": "#9c27b0",
       "fillOpacity": 0.8706
     },
-    "mymaps-3479": {
+    "mymaps-3484": {
       "stroke": "#9c27b0",
       "strokeWidth": 1.2,
       "fill": "#9c27b0",
       "fillOpacity": 0.8392
     },
-    "mymaps-3480": {
+    "mymaps-3485": {
       "stroke": "#f48fb1",
       "strokeWidth": 1.2,
       "fill": "#f48fb1",
       "fillOpacity": 0.851
     },
-    "mymaps-3481": {
+    "mymaps-3486": {
       "stroke": "#f57c00",
       "strokeWidth": 5.65
     },
-    "mymaps-3482": {
+    "mymaps-3487": {
       "stroke": "#f57c00",
       "strokeWidth": 3
     }
@@ -660,7 +650,8 @@
   ],
   "routingConfig": {
     "startFeatureId": "",
+    "alwaysVisibleFeatureIds": [],
     "destinations": []
   },
-  "_convertedAt": "2026-06-06T12:53:46.224Z"
+  "_convertedAt": "2026-06-10T07:34:08.787Z"
 }
