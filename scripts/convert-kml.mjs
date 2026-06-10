@@ -356,12 +356,14 @@ async function run() {
     objectInfo: {},
     myMapsStyles: {},
     textLabels: (oldOverlays && oldOverlays.textLabels) ? oldOverlays.textLabels : [],
+    routingConfig: { startFeatureId: "", destinations: [] },
     _convertedAt: new Date().toISOString()
   };
   
   let mergedCount = 0;
   let unmatchedOldCount = 0;
   let unmatchedNewCount = 0;
+  const migratedIdsMap = {}; // oldId -> newId
   
   if (oldGeojson && oldGeojson.features && oldOverlays) {
     console.log('Performing smart geometry merge...');
@@ -377,7 +379,6 @@ async function run() {
     }
     
     const usedOldIds = new Set();
-    const migratedIdsMap = {}; // oldId -> newId
     
     for (const newFeat of newFeatures) {
       const newFp = getGeometryFingerprint(newFeat.geometry);
@@ -418,6 +419,36 @@ async function run() {
         unmatchedOldCount++;
         console.log(`⚠️ Overlay data of deleted feature ${oldId} was not migrated.`);
       }
+    }
+    
+    // Migrate startFeatureId, alwaysVisibleFeatureIds, and routing segments
+    if (oldOverlays.routingConfig) {
+      newOverlays.routingConfig = {
+        startFeatureId: migratedIdsMap[oldOverlays.routingConfig.startFeatureId] || oldOverlays.routingConfig.startFeatureId || "",
+        alwaysVisibleFeatureIds: (oldOverlays.routingConfig.alwaysVisibleFeatureIds || []).map(id => migratedIdsMap[id] || id),
+        destinations: (oldOverlays.routingConfig.destinations || []).map(dest => {
+          const routes = (dest.routes || []).map(route => {
+            const segments = (route.segments || []).map(seg => ({
+              ...seg,
+              featureId: migratedIdsMap[seg.featureId] || seg.featureId
+            }));
+            return {
+              ...route,
+              segments
+            };
+          });
+          const routeSegments = (dest.routeSegments || []).map(seg => ({
+            ...seg,
+            featureId: migratedIdsMap[seg.featureId] || seg.featureId
+          }));
+          return {
+            ...dest,
+            featureId: migratedIdsMap[dest.featureId] || dest.featureId || "",
+            routes,
+            routeSegments
+          };
+        })
+      };
     }
     
     console.log(`Merge summary:`);

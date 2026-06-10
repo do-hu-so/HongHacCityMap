@@ -124,6 +124,12 @@ export async function GET() {
 export async function POST(request) {
   try {
     const data = await request.json();
+    
+    // Ensure _convertedAt is preserved from initialData if missing, preventing false-positive overwrites
+    if (!data._convertedAt && initialData._convertedAt) {
+      data._convertedAt = initialData._convertedAt;
+    }
+    
     const blobConfigured = isBlobConfigured();
 
     if (blobConfigured) {
@@ -142,7 +148,13 @@ export async function POST(request) {
       // 2. Clean up old overlays.json blobs asynchronously to free up Vercel storage space
       try {
         const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
-        const oldBlobs = blobs.filter(b => b.pathname.endsWith("overlays.json") && b.url !== newBlob.url);
+        // Correct filter pattern matching random suffixes (starts with overlays, ends with .json)
+        const oldBlobs = blobs.filter(
+          (b) =>
+            b.pathname.startsWith("overlays") &&
+            b.pathname.endsWith(".json") &&
+            b.url !== newBlob.url
+        );
         if (oldBlobs.length > 0) {
           console.log(`Deleting ${oldBlobs.length} stale overlays blobs...`);
           await del(oldBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });

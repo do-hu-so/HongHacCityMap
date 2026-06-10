@@ -321,3 +321,33 @@ Người dùng chỉnh sửa trên web (cài đặt)
 - **ID:** `admin`
 - **Password:** `123admin@123`
 - Hardcoded trong `app/api/auth/route.js`
+
+---
+
+## Đề xuất Tính năng Mới: Hệ thống Tuyến đường & Dẫn đường (Graph-based Routing)
+
+Nhằm tối ưu hóa trải nghiệm dẫn đường tham quan dự án bắt đầu từ Hồng Hạc City đến các địa điểm định sẵn.
+
+### 1. Kiến trúc dữ liệu (`overlays.json`)
+Thêm cấu hình `routingConfig` lưu trữ thông tin:
+- `startFeatureId`: ID đối tượng xuất phát (Hồng Hạc City).
+- `destinations`: Danh sách các điểm đến cấu hình trước:
+  - `id`: Mã định danh duy nhất.
+  - `name`: Tên địa điểm hiển thị ở dropdown.
+  - `featureId`: ID của đối tượng đích trên bản đồ.
+  - `nodes`: Danh sách các nút giao đã đi qua.
+  - `routeCoordinates`: Chuỗi tọa độ chi tiết của lộ trình để render trực tiếp lên bản đồ (tránh đứt gãy khi ID KML thay đổi).
+
+### 2. Giải pháp hiển thị & Bộ lọc (View Mode)
+- **Mặc định**: Ẩn toàn bộ đường đi và đa giác, chỉ hiển thị duy nhất khu vực Hồng Hạc City (`startFeatureId`) và các Text Label chính.
+- **Thành phần điều khiển**: Panel bên phải dạng Dropdown cao cấp (Glassmorphism):
+  - **Nút Hiện/Ẩn địa điểm**: Bật/tắt hiển thị đa giác điểm đích, tự động pan/zoom và mở InfoBox tương ứng.
+  - **Nút Bật/Tắt đường đi**: Vẽ lộ trình di chuyển đè lên bản đồ với hiệu ứng Neon chuyển động (Marching Ants/Dash Offset) ấn tượng.
+
+### 3. Giao diện Cấu hình (Settings Mode)
+- Tích hợp một tab **Quản lý Tuyến đường** vào SettingsPanel.
+- **Cơ chế hoạt động**:
+  - Hệ thống tự động phân tích toàn bộ LineString trong GeoJSON, nhóm (snap) các điểm giao nhau có khoảng cách dưới **5 mét** thành các **Nút giao (Intersection Nodes)**.
+  - Hiển thị các nút giao dưới dạng chấm tròn ngọc (Cyan) trên bản đồ.
+  - Admin thiết lập lộ trình bằng cách click lần lượt các nút giao (Nút 1 -> Nút 2 -> Nút 3). Hệ thống chạy thuật toán Dijkstra để tìm đường đi ngắn nhất theo thực tế đường vẽ và highlight lộ trình.
+  - Admin nhấn **Enter** để hoàn thành và lưu tọa độ lộ trình.

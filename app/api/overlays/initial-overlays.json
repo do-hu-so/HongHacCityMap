@@ -164,6 +164,16 @@
       "title": "KCN Yên Phong",
       "description": "",
       "images": []
+    },
+    "mymaps-3481": {
+      "title": "Quốc Lộ 5",
+      "description": "",
+      "images": []
+    },
+    "mymaps-3482": {
+      "title": "Quốc Lộ 5B",
+      "description": "",
+      "images": []
     }
   },
   "myMapsStyles": {
@@ -192,7 +202,7 @@
     "mymaps-3446": {
       "stroke": "#ffff8d",
       "strokeWidth": 1.2,
-      "fill": "#ffff8d",
+      "fill": "#ff0000",
       "fillOpacity": 0.8588
     },
     "mymaps-3447": {
@@ -223,7 +233,7 @@
     },
     "mymaps-3452": {
       "stroke": "#097138",
-      "strokeWidth": 2.938
+      "strokeWidth": 1
     },
     "mymaps-3453": {
       "stroke": "#7cb342",
@@ -231,11 +241,11 @@
     },
     "mymaps-3454": {
       "stroke": "#e65100",
-      "strokeWidth": 5.069
+      "strokeWidth": 1.5
     },
     "mymaps-3455": {
       "stroke": "#e65100",
-      "strokeWidth": 5.263
+      "strokeWidth": 2
     },
     "mymaps-3457": {
       "stroke": "#e65100",
@@ -277,19 +287,22 @@
     },
     "mymaps-3468": {
       "stroke": "#e65100",
-      "strokeWidth": 4.1
+      "strokeWidth": 1.5
     },
     "mymaps-3469": {
-      "stroke": "#ffd600",
-      "strokeWidth": 7.781
+      "stroke": "#ff0000",
+      "strokeWidth": 4,
+      "dashArray": "6 8"
     },
     "mymaps-3470": {
-      "stroke": "#ffd600",
-      "strokeWidth": 7.006
+      "stroke": "#ff0000",
+      "strokeWidth": 2.5,
+      "dashArray": "6 7"
     },
     "mymaps-3471": {
-      "stroke": "#ffd600",
-      "strokeWidth": 7.006
+      "stroke": "#ff0000",
+      "strokeWidth": 4,
+      "dashArray": "6 8"
     },
     "mymaps-3474": {
       "stroke": "#ffd600",
@@ -334,6 +347,14 @@
       "strokeWidth": 1.2,
       "fill": "#f48fb1",
       "fillOpacity": 0.851
+    },
+    "mymaps-3481": {
+      "stroke": "#f57c00",
+      "strokeWidth": 5.65
+    },
+    "mymaps-3482": {
+      "stroke": "#f57c00",
+      "strokeWidth": 3
     }
   },
   "textLabels": [
@@ -596,7 +617,50 @@
       "color": "#1f2937",
       "scaleWithZoom": true,
       "rotation": -13
+    },
+    {
+      "id": "label-1780350037483",
+      "text": "Quốc Lộ 5",
+      "position": [
+        21.008801073501697,
+        105.95626831054689
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 44
+    },
+    {
+      "id": "label-1780350073376",
+      "text": "Quốc Lộ 5B",
+      "position": [
+        20.980353943570694,
+        105.94459533691408
+      ],
+      "fontSize": 150,
+      "zoomBase": 15,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": 63
+    },
+    {
+      "id": "label-1780350149260",
+      "text": "Đường Vành Đai 4",
+      "position": [
+        20.99125263943275,
+        106.01978302001955
+      ],
+      "fontSize": 145,
+      "zoomBase": 16,
+      "color": "#1f2937",
+      "scaleWithZoom": true,
+      "rotation": -40
     }
   ],
-  "_convertedAt": "2026-05-31T17:52:42.060Z"
+  "routingConfig": {
+    "startFeatureId": "",
+    "destinations": []
+  },
+  "_convertedAt": "2026-06-06T12:53:46.224Z"
 }

@@ -668,6 +668,11 @@ body {
   background: var(--bg-secondary) !important;
 }
 
+/* Custom map styling to make water bluer and background vibrant */
+.leaflet-tile {
+  filter: hue-rotate(5deg) saturate(3.5) contrast(1.2) brightness(0.85);
+}
+
 /* Feature highlight */
 .leaflet-interactive.feature-highlighted {
   filter: brightness(1.2);
@@ -1009,5 +1014,238 @@ body {
     right: 16px;
   }
 }
+
+/* ============ Graph-based Routing Neon Visualizations ============ */
+.route-glow-line {
+  filter: drop-shadow(0 0 5px #00f3ff) drop-shadow(0 0 10px #00f3ff);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.route-flow-line {
+  stroke-dasharray: 10 15;
+  animation: routeFlowAnim 20s linear infinite;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@keyframes routeFlowAnim {
+  to {
+    stroke-dashoffset: -500;
+  }
+}
+
+.route-edit-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.routing-node-marker {
+  cursor: pointer;
+  transition: r var(--transition), fill var(--transition), stroke var(--transition);
+}
+
+.routing-node-marker:hover {
+  r: 10px;
+}
+
+/* ============ Glassmorphism Navigation Floating Panel ============ */
+.glass-navigation-panel {
+  position: absolute;
+  top: 72px;
+  right: 16px;
+  width: 280px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  overflow: hidden;
+  animation: fadeInRight 0.3s ease;
+  transition: all var(--transition);
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.glass-nav-header {
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-nav-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+
+.glass-nav-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.glass-nav-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color var(--transition);
+}
+
+.glass-nav-select:focus {
+  border-color: var(--accent);
+}
+
+.glass-nav-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.glass-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 0;
+}
+
+.glass-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ============ Map Cursor Helper for admin selection ============ */
+.selecting-location .leaflet-container {
+  cursor: crosshair !important;
+}
+
+.selecting-location .leaflet-interactive {
+  cursor: cell !important;
+}
+
+/* Tablet responsiveness for navigation panel */
+@media (max-width: 768px) {
+  .glass-navigation-panel {
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+    box-shadow: 0 -4px 32px rgba(31, 38, 135, 0.15);
+  }
+}
+
+/* ============ Custom POI Markers ============ */
+.poi-marker-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  pointer-events: auto !important;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+}
+
+.poi-label-box {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1.5px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  margin-bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  min-width: 80px;
+  backdrop-filter: blur(4px);
+}
+
+.poi-label-title {
+  color: var(--text-primary);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.poi-label-address {
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+.poi-pin-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.poi-pin-svg {
+  display: block;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.poi-inner-icon {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+@keyframes gentle-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.poi-marker-bounce {
+  animation: gentle-bounce 2s ease-in-out infinite;
+}
+
+/* Cursor modifications for add mode */
+.adding-poi-label {
+  cursor: crosshair !important;
+}
+
+.adding-poi-label .leaflet-grab {
+  cursor: crosshair !important;
+}
+
 
 
