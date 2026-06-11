@@ -305,31 +305,47 @@ async function run() {
     }
   }
   
-  // Try to fetch live overlays from deployed Vercel site (includes all web edits)
+  let fetchedOverlays = null;
   if (config.deployUrl) {
     try {
       const apiUrl = `${config.deployUrl.replace(/\/$/, '')}/api/overlays`;
       console.log(`Fetching live overlays from ${apiUrl} ...`);
       const res = await fetch(apiUrl);
       if (res.ok) {
-        oldOverlays = await res.json();
+        fetchedOverlays = await res.json();
         console.log('✅ Fetched live overlays from Vercel (includes all web edits).');
       } else {
-        console.warn(`⚠️ Failed to fetch live overlays (HTTP ${res.status}). Falling back to local file.`);
+        console.warn(`⚠️ Failed to fetch live overlays (HTTP ${res.status}).`);
       }
     } catch (e) {
-      console.warn(`⚠️ Could not connect to deploy URL: ${e.message}. Falling back to local file.`);
+      console.warn(`⚠️ Could not connect to deploy URL: ${e.message}.`);
     }
   }
   
-  // Fall back to local overlays file
-  if (!oldOverlays && fs.existsSync(overlaysPath)) {
+  let localOverlays = null;
+  if (fs.existsSync(overlaysPath)) {
     try {
-      oldOverlays = JSON.parse(fs.readFileSync(overlaysPath, 'utf8'));
+      localOverlays = JSON.parse(fs.readFileSync(overlaysPath, 'utf8'));
       console.log('Loaded old overlays from local file.');
     } catch (e) {
       console.warn(`Could not parse old overlays.json: ${e.message}`);
     }
+  }
+
+  // Choose the best oldOverlays source
+  if (fetchedOverlays && localOverlays) {
+    const fetchedHasRouting = fetchedOverlays.routingConfig && fetchedOverlays.routingConfig.destinations?.length > 0;
+    const localHasRouting = localOverlays.routingConfig && localOverlays.routingConfig.destinations?.length > 0;
+    
+    if (localHasRouting && !fetchedHasRouting) {
+      console.warn('⚠️ Warning: Deployed site has no routing configuration, but local file does. Using local overlays to prevent data loss.');
+      oldOverlays = localOverlays;
+    } else {
+      console.log('Using live overlays from Vercel.');
+      oldOverlays = fetchedOverlays;
+    }
+  } else {
+    oldOverlays = fetchedOverlays || localOverlays;
   }
   
   // Create output directories and backups if old files exist

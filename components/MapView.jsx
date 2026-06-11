@@ -275,6 +275,14 @@ export default function MapView({
   onFeatureClickRef.current = onFeatureClick;
   const onOverlaysChangeRef = useRef(onOverlaysChange);
   onOverlaysChangeRef.current = onOverlaysChange;
+  const addingPoiLabelRef = useRef(addingPoiLabel);
+  addingPoiLabelRef.current = addingPoiLabel;
+  const addingTextLabelRef = useRef(addingTextLabel);
+  addingTextLabelRef.current = addingTextLabel;
+  const onAddPoiLabelRef = useRef(onAddPoiLabel);
+  onAddPoiLabelRef.current = onAddPoiLabel;
+  const onAddTextLabelRef = useRef(onAddTextLabel);
+  onAddTextLabelRef.current = onAddTextLabel;
 
   // Handle map click events to add text labels or POI markers
   useEffect(() => {
@@ -470,7 +478,23 @@ export default function MapView({
         });
       },
       onEachFeature: (feature, layer) => {
+        const style = getStyleNow(feature);
         layer.on("click", (e) => {
+          if (addingTextLabelRef.current) {
+            L.DomEvent.stopPropagation(e);
+            onAddTextLabelRef.current(e.latlng);
+            return;
+          }
+          if (addingPoiLabelRef.current) {
+            L.DomEvent.stopPropagation(e);
+            const snap = map._currentSnap;
+            if (snap) {
+              onAddPoiLabelRef.current(snap.latlng, snap.routeId, "associated");
+            } else {
+              onAddPoiLabelRef.current(e.latlng, "", "always");
+            }
+            return;
+          }
           if (selectingFeatureForRef.current === "alwaysVisible") {
             L.DomEvent.stopPropagation(e);
             const fid = feature.id;
@@ -486,7 +510,6 @@ export default function MapView({
             });
             return;
           }
-          const style = getStyleNow(feature);
           if (!style.interactive) return;
           L.DomEvent.stopPropagation(e);
           onFeatureClickRef.current({ type: "geojson", data: feature, latlng: e.latlng });
@@ -494,7 +517,6 @@ export default function MapView({
         });
 
         layer.on("mouseover", () => {
-          const style = getStyleNow(feature);
           if (!style.interactive) return;
           layer.setStyle({ weight: 3, fillOpacity: 0.7 });
         });
@@ -508,10 +530,25 @@ export default function MapView({
             color: "#000",
             weight: 24,
             opacity: 0,
-            interactive: true,
+            interactive: style.interactive,
           });
 
           hitLayer.on("click", (e) => {
+            if (addingTextLabelRef.current) {
+              L.DomEvent.stopPropagation(e);
+              onAddTextLabelRef.current(e.latlng);
+              return;
+            }
+            if (addingPoiLabelRef.current) {
+              L.DomEvent.stopPropagation(e);
+              const snap = map._currentSnap;
+              if (snap) {
+                onAddPoiLabelRef.current(snap.latlng, snap.routeId, "associated");
+              } else {
+                onAddPoiLabelRef.current(e.latlng, "", "always");
+              }
+              return;
+            }
             if (selectingFeatureForRef.current === "alwaysVisible") {
               L.DomEvent.stopPropagation(e);
               const fid = feature.id;
@@ -1365,35 +1402,7 @@ export default function MapView({
     };
   }, [mode, activeRouteSegments, geojson, overlays, activeDestinationIds, onFeatureClick, currentZoom]);
 
-  // Handle adding text label click
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
 
-    const onClick = (e) => {
-      if (addingTextLabel) {
-        onAddTextLabel(e.latlng);
-      }
-    };
-
-    map.on("click", onClick);
-    return () => map.off("click", onClick);
-  }, [addingTextLabel, onAddTextLabel]);
-
-  // Deselect when clicking empty map
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    const onClick = (e) => {
-      if (!addingTextLabel && e.originalEvent?.target === mapRef.current?.querySelector(".leaflet-container canvas") || e.originalEvent?.target?.classList?.contains("leaflet-tile")) {
-        // Click on empty map area - only deselect if not clicking a feature
-      }
-    };
-
-    map.on("click", onClick);
-    return () => map.off("click", onClick);
-  }, [addingTextLabel]);
 
   // Sync openBoxes with Leaflet markers
   useEffect(() => {

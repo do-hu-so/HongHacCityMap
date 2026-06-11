@@ -140,6 +140,7 @@ function GeoJsonEditor({ info, overlays, onSave, onClose }) {
   }, [customStyle.dashArray]);
 
   // Image adding
+  const lastSyncedFeatureRef = useRef(null);
   const [newImageUrl, setNewImageUrl] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
   const [localImages, setLocalImages] = useState([]);
@@ -161,27 +162,37 @@ function GeoJsonEditor({ info, overlays, onSave, onClose }) {
 
   // Sync when switching features
   useEffect(() => {
-    const obj = overlays.objectInfo?.[featureId] || {};
-    const style = overlays.myMapsStyles?.[featureId] || {};
-    const orig = info.originalProps || {};
+    const dataToSync = {
+      featureId,
+      obj: overlays.objectInfo?.[featureId] || {},
+      style: overlays.myMapsStyles?.[featureId] || {},
+    };
+    const dataStr = JSON.stringify(dataToSync);
+    if (dataStr !== lastSyncedFeatureRef.current) {
+      lastSyncedFeatureRef.current = dataStr;
+      
+      const obj = overlays.objectInfo?.[featureId] || {};
+      const style = overlays.myMapsStyles?.[featureId] || {};
+      const orig = info.originalProps || {};
 
-    setTitle(obj.title || info.title || "");
-    setDescription(obj.description || "");
-    setImages(obj.images || []);
-    setStroke(style.stroke || orig.stroke || "#3388ff");
-    setStrokeWidth(style.strokeWidth ?? orig["stroke-width"] ?? 1.2);
-    setFill(style.fill || orig.fill || "#3388ff");
-    setFillOpacity(style.fillOpacity ?? orig["fill-opacity"] ?? 0.5);
-    setIsDashed(!!style.dashArray);
-    if (style.dashArray) {
-      const parts = style.dashArray.split(" ").map(Number);
-      if (parts.length >= 2) {
-        setDashLength(parts[0]);
-        setDashGap(parts[1]);
+      setTitle(obj.title || info.title || "");
+      setDescription(obj.description || "");
+      setImages(obj.images || []);
+      setStroke(style.stroke || orig.stroke || "#3388ff");
+      setStrokeWidth(style.strokeWidth ?? orig["stroke-width"] ?? 1.2);
+      setFill(style.fill || orig.fill || "#3388ff");
+      setFillOpacity(style.fillOpacity ?? orig["fill-opacity"] ?? 0.5);
+      setIsDashed(!!style.dashArray);
+      if (style.dashArray) {
+        const parts = style.dashArray.split(" ").map(Number);
+        if (parts.length >= 2) {
+          setDashLength(parts[0]);
+          setDashGap(parts[1]);
+        }
+      } else {
+        setDashLength(10);
+        setDashGap(5);
       }
-    } else {
-      setDashLength(10);
-      setDashGap(5);
     }
   }, [featureId, overlays, info]);
 
@@ -543,13 +554,19 @@ function TextLabelEditor({ label, overlays, onSave, onPreview, onClose, onDelete
   const [fontSize, setFontSize] = useState(label.fontSize || 14);
   const [zoomBase, setZoomBase] = useState(label.zoomBase || 16);
   const [rotation, setRotation] = useState(label.rotation || 0);
+  const lastSyncedLabelRef = useRef(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   useEffect(() => {
-    setText(label.text || "");
-    setColor(label.color || "#1f2937");
-    setFontSize(label.fontSize || 14);
-    setZoomBase(label.zoomBase || 16);
-    setRotation(label.rotation || 0);
+    const labelStr = JSON.stringify(label);
+    if (labelStr !== lastSyncedLabelRef.current) {
+      lastSyncedLabelRef.current = labelStr;
+      setText(label.text || "");
+      setColor(label.color || "#1f2937");
+      setFontSize(label.fontSize || 14);
+      setZoomBase(label.zoomBase || 16);
+      setRotation(label.rotation || 0);
+    }
   }, [label]);
 
   // Real-time preview: update map DOM on every change
@@ -704,12 +721,27 @@ function TextLabelEditor({ label, overlays, onSave, onPreview, onClose, onDelete
           </button>
           <button
             className="btn btn-danger"
-            onClick={() => onDelete(label.id)}
+            onClick={() => {
+              setConfirmAction({
+                message: "Bạn có chắc chắn muốn xóa chữ này?",
+                onConfirm: () => onDelete(label.id),
+              });
+            }}
           >
             🗑 Xóa
           </button>
         </div>
       </div>
+      {confirmAction && (
+        <ConfirmDialog
+          message={confirmAction.message}
+          onConfirm={() => {
+            confirmAction.onConfirm();
+            setConfirmAction(null);
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
     </div>
   );
 }
@@ -746,6 +778,8 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
   const [icons, setIcons] = useState([]);
 
   const fileInputRef = useRef(null);
+  const lastSyncedPoiRef = useRef(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const handleUploadIcon = async (e) => {
     const file = e.target.files[0];
@@ -784,32 +818,33 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
       return;
     }
 
-    if (!confirm(`Bạn có chắc chắn muốn xóa tệp biểu tượng "${poiType}" khỏi hệ thống? Các địa điểm đang dùng biểu tượng này có thể bị lỗi.`)) {
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/icons", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: poiType }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        // Refresh icons list
-        const listRes = await fetch("/api/icons");
-        const listData = await listRes.json();
-        if (listData.success && listData.files) {
-          setIcons(listData.files);
+    setConfirmAction({
+      message: `Bạn có chắc chắn muốn xóa tệp biểu tượng "${poiType}" khỏi hệ thống? Các địa điểm đang dùng biểu tượng này có thể bị lỗi.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch("/api/icons", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: poiType }),
+          });
+          const data = await res.json();
+          if (data.success) {
+            // Refresh icons list
+            const listRes = await fetch("/api/icons");
+            const listData = await listRes.json();
+            if (listData.success && listData.files) {
+              setIcons(listData.files);
+            }
+            setPoiType("bridge.svg");
+            alert("Đã xóa biểu tượng thành công.");
+          } else {
+            alert("Lỗi xóa: " + (data.error || "Không rõ nguyên nhân"));
+          }
+        } catch (err) {
+          alert("Lỗi kết nối: " + err.message);
         }
-        setPoiType("bridge.svg");
-        alert("Đã xóa biểu tượng thành công.");
-      } else {
-        alert("Lỗi xóa: " + (data.error || "Không rõ nguyên nhân"));
       }
-    } catch (err) {
-      alert("Lỗi kết nối: " + err.message);
-    }
+    });
   };
 
   // Fetch icons on mount
@@ -840,18 +875,22 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
 
   // Sync state with selected POI changes
   useEffect(() => {
-    setName(poi.name || "");
-    setAddress(poi.address || "");
-    setDescription(poi.description || "");
-    setPoiType(poi.poiType || "bridge.svg");
-    setColor(poi.color || getDefaultPoiColor(poi.poiType || "bridge.svg"));
-    setVisibilityMode(poi.visibilityMode || "always");
-    setAssociatedRouteId(poi.associatedRouteId || "");
-    setIconSize(poi.iconSize || 28);
-    setLabelFontSize(poi.labelFontSize || 12);
-    setLabelMinZoom(poi.labelMinZoom || 11);
-    setLabelMaxZoom(poi.labelMaxZoom || 45);
-    setImages(poi.images || []);
+    const poiStr = JSON.stringify(poi);
+    if (poiStr !== lastSyncedPoiRef.current) {
+      lastSyncedPoiRef.current = poiStr;
+      setName(poi.name || "");
+      setAddress(poi.address || "");
+      setDescription(poi.description || "");
+      setPoiType(poi.poiType || "bridge.svg");
+      setColor(poi.color || getDefaultPoiColor(poi.poiType || "bridge.svg"));
+      setVisibilityMode(poi.visibilityMode || "always");
+      setAssociatedRouteId(poi.associatedRouteId || "");
+      setIconSize(poi.iconSize || 28);
+      setLabelFontSize(poi.labelFontSize || 12);
+      setLabelMinZoom(poi.labelMinZoom || 11);
+      setLabelMaxZoom(poi.labelMaxZoom || 45);
+      setImages(poi.images || []);
+    }
   }, [poi]);
 
   // List all routes in the system to associate with
@@ -908,6 +947,31 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
     );
   }, []);
 
+  const handleSaveField = (field, value) => {
+    const updatedPoi = {
+      ...poi,
+      name: field === "name" ? value : name,
+      address: field === "address" ? value : address,
+      poiType: field === "poiType" ? value : poiType,
+      iconSize: field === "iconSize" ? Number(value) : Number(iconSize),
+      labelFontSize: field === "labelFontSize" ? Number(value) : Number(labelFontSize),
+      labelMinZoom: field === "labelMinZoom" ? Number(value) : Number(labelMinZoom),
+      labelMaxZoom: field === "labelMaxZoom" ? Number(value) : Number(labelMaxZoom),
+      visibilityMode: field === "visibilityMode" ? value : visibilityMode,
+      associatedRouteId: field === "associatedRouteId" ? value : associatedRouteId,
+      description: field === "description" ? value : description,
+      images: field === "images" ? value : images,
+      color: field === "color" ? value : color,
+    };
+    if (field === "poiType") {
+      updatedPoi.color = getDefaultPoiColor(value);
+    }
+    const newPoiLabels = (overlays.poiLabels || []).map((p) =>
+      p.id === poi.id ? updatedPoi : p
+    );
+    onSave({ ...overlays, poiLabels: newPoiLabels });
+  };
+
   const handleSave = async () => {
     let finalIconUrl = `/icons/${poiType}`;
     try {
@@ -949,11 +1013,14 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
   };
 
   const handleDelete = () => {
-    if (confirm("Bạn có chắc chắn muốn xóa địa điểm POI này?")) {
-      const newPoiLabels = (overlays.poiLabels || []).filter((p) => p.id !== poi.id);
-      onSave({ ...overlays, poiLabels: newPoiLabels });
-      onClose();
-    }
+    setConfirmAction({
+      message: "Bạn có chắc chắn muốn xóa địa điểm POI này?",
+      onConfirm: () => {
+        const newPoiLabels = (overlays.poiLabels || []).filter((p) => p.id !== poi.id);
+        onSave({ ...overlays, poiLabels: newPoiLabels });
+        onClose();
+      }
+    });
   };
 
   return (
@@ -974,7 +1041,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)} onBlur={(e) => handleSaveField("name", e.target.value)}
               placeholder="Nhập tên địa điểm..."
             />
           </div>
@@ -984,7 +1051,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
             <input
               type="text"
               value={address}
-              onChange={(e) => setAddress(e.target.value)}
+              onChange={(e) => setAddress(e.target.value)} onBlur={(e) => handleSaveField("address", e.target.value)}
               placeholder="Nhập địa chỉ..."
             />
           </div>
@@ -993,7 +1060,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
             <label>Mô tả chi tiết (Enter để xuống dòng)</label>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)} onBlur={(e) => handleSaveField("description", e.target.value)}
               placeholder="Thêm mô tả địa điểm..."
               rows={4}
             />
@@ -1011,6 +1078,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
                 const newType = e.target.value;
                 setPoiType(newType);
                 setColor(getDefaultPoiColor(newType));
+                handleSaveField("poiType", newType);
               }}>
                 {icons.length === 0 ? (
                   <option value="bridge.svg">Đang tải icon...</option>
@@ -1062,12 +1130,12 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
               <input
                 type="color"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={(e) => { setColor(e.target.value); handleSaveField("color", e.target.value); }}
               />
               <input
                 type="text"
                 value={color}
-                onChange={(e) => setColor(e.target.value)}
+                onChange={(e) => setColor(e.target.value)} onBlur={(e) => handleSaveField("color", e.target.value)}
               />
             </div>
           </div>
@@ -1081,7 +1149,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
                 max="120"
                 step="1"
                 value={iconSize}
-                onChange={(e) => setIconSize(Number(e.target.value))}
+                onChange={(e) => { setIconSize(Number(e.target.value)); handleSaveField("iconSize", Number(e.target.value)); }}
                 style={{ flex: 1 }}
               />
               <input
@@ -1093,6 +1161,10 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   if (v >= 16 && v <= 120) setIconSize(v);
+                }}
+                onBlur={(e) => {
+                  const v = Number(e.target.value);
+                  if (v >= 16 && v <= 120) handleSaveField("iconSize", v);
                 }}
                 style={{ width: "56px", textAlign: "center", padding: "4px 6px", border: "1px solid var(--border)", borderRadius: "4px", fontSize: "12px" }}
               />
@@ -1107,7 +1179,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
               max="24"
               step="1"
               value={labelFontSize}
-              onChange={(e) => setLabelFontSize(Number(e.target.value))}
+              onChange={(e) => { setLabelFontSize(Number(e.target.value)); handleSaveField("labelFontSize", Number(e.target.value)); }}
             />
           </div>
 
@@ -1119,7 +1191,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
               max="30"
               step="1"
               value={labelMinZoom}
-              onChange={(e) => setLabelMinZoom(Number(e.target.value))}
+              onChange={(e) => { setLabelMinZoom(Number(e.target.value)); handleSaveField("labelMinZoom", Number(e.target.value)); }}
             />
           </div>
 
@@ -1131,7 +1203,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
               max="45"
               step="1"
               value={labelMaxZoom}
-              onChange={(e) => setLabelMaxZoom(Number(e.target.value))}
+              onChange={(e) => { setLabelMaxZoom(Number(e.target.value)); handleSaveField("labelMaxZoom", Number(e.target.value)); }}
             />
           </div>
         </div>
@@ -1144,7 +1216,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
             <label>Hiển thị</label>
             <select
               value={visibilityMode}
-              onChange={(e) => setVisibilityMode(e.target.value)}
+              onChange={(e) => { setVisibilityMode(e.target.value); handleSaveField("visibilityMode", e.target.value); }}
             >
               <option value="always">Hiển thị luôn từ đầu (Mặc định)</option>
               <option value="associated">Hiển thị cùng tuyến đường đi qua nó</option>
@@ -1156,7 +1228,7 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
               <label>Tuyến đường liên kết</label>
               <select
                 value={associatedRouteId}
-                onChange={(e) => setAssociatedRouteId(e.target.value)}
+                onChange={(e) => { setAssociatedRouteId(e.target.value); handleSaveField("associatedRouteId", e.target.value); }}
               >
                 <option value="">-- Chọn tuyến đường đi qua --</option>
                 {allRoutes.map((r) => (
@@ -1309,6 +1381,16 @@ function PoiLabelEditor({ poi, overlays, onSave, onClose }) {
           </button>
         </div>
       </div>
+      {confirmAction && (
+        <ConfirmDialog
+          message={confirmAction.message}
+          onConfirm={() => {
+            confirmAction.onConfirm();
+            setConfirmAction(null);
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1328,10 +1410,16 @@ function RoutingEditor({
   );
   const [selectedDestId, setSelectedDestId] = useState("");
   const [selectedRouteId, setSelectedRouteId] = useState("");
+  const lastSyncedConfigRef = useRef(null);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   useEffect(() => {
     if (overlays?.routingConfig) {
-      setRoutingConfig(overlays.routingConfig);
+      const configStr = JSON.stringify(overlays.routingConfig);
+      if (configStr !== lastSyncedConfigRef.current) {
+        lastSyncedConfigRef.current = configStr;
+        setRoutingConfig(overlays.routingConfig);
+      }
     }
   }, [overlays?.routingConfig]);
 
@@ -1349,19 +1437,44 @@ function RoutingEditor({
     });
   };
 
+  const handleStartSelecting = (targetMode) => {
+    onSave({
+      ...overlays,
+      routingConfig,
+    });
+    onSelectingFeatureForChange(targetMode);
+  };
+
+  const handleStartDrawing = (routeData) => {
+    onSave({
+      ...overlays,
+      routingConfig,
+    });
+    onActiveRouteEditChange(routeData);
+  };
+
   const handleFinishDrawing = () => {
     if (!activeRouteEdit) return;
     const { destId, id, segments, nodes, editPerSegment } = activeRouteEdit;
-    setRoutingConfig((prev) => {
-      const nextDestinations = (prev.destinations || []).map((d) => {
-        if (d.id !== destId) return d;
-        const nextRoutes = (d.routes || []).map((r) => {
-          if (r.id !== id) return r;
-          return { ...r, segments, nodes, editPerSegment };
-        });
-        return { ...d, routes: nextRoutes };
+    
+    const nextDestinations = (routingConfig.destinations || []).map((d) => {
+      if (d.id !== destId) return d;
+      const nextRoutes = (d.routes || []).map((r) => {
+        if (r.id !== id) return r;
+        return { ...r, segments, nodes, editPerSegment };
       });
-      return { ...prev, destinations: nextDestinations };
+      return { ...d, routes: nextRoutes };
+    });
+    
+    const nextConfig = {
+      ...routingConfig,
+      destinations: nextDestinations,
+    };
+    
+    setRoutingConfig(nextConfig);
+    onSave({
+      ...overlays,
+      routingConfig: nextConfig,
     });
     onActiveRouteEditChange(null);
   };
@@ -1373,23 +1486,37 @@ function RoutingEditor({
       featureId: "",
       routes: [],
     };
-    setRoutingConfig((prev) => ({
-      ...prev,
-      destinations: [...(prev.destinations || []), newDest],
-    }));
+    const nextConfig = {
+      ...routingConfig,
+      destinations: [...(routingConfig.destinations || []), newDest],
+    };
+    setRoutingConfig(nextConfig);
+    onSave({
+      ...overlays,
+      routingConfig: nextConfig,
+    });
     setSelectedDestId(newDest.id);
   };
 
   const deleteDestination = (destId) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa điểm đến này và tất cả các tuyến đường của nó?")) return;
-    setRoutingConfig((prev) => ({
-      ...prev,
-      destinations: (prev.destinations || []).filter((d) => d.id !== destId),
-    }));
-    if (selectedDestId === destId) {
-      setSelectedDestId("");
-      setSelectedRouteId("");
-    }
+    setConfirmAction({
+      message: "Bạn có chắc chắn muốn xóa điểm đến này và tất cả các tuyến đường của nó?",
+      onConfirm: () => {
+        const nextConfig = {
+          ...routingConfig,
+          destinations: (routingConfig.destinations || []).filter((d) => d.id !== destId),
+        };
+        setRoutingConfig(nextConfig);
+        onSave({
+          ...overlays,
+          routingConfig: nextConfig,
+        });
+        if (selectedDestId === destId) {
+          setSelectedDestId("");
+          setSelectedRouteId("");
+        }
+      }
+    });
   };
 
   const addRoute = (destId) => {
@@ -1416,34 +1543,50 @@ function RoutingEditor({
       labelSingleZoom: 15,
       editPerSegment: false,
     };
-    setRoutingConfig((prev) => {
-      const nextDestinations = (prev.destinations || []).map((d) => {
-        if (d.id !== destId) return d;
-        return {
-          ...d,
-          routes: [...(d.routes || []), newRoute],
-        };
-      });
-      return { ...prev, destinations: nextDestinations };
+    const nextDestinations = (routingConfig.destinations || []).map((d) => {
+      if (d.id !== destId) return d;
+      return {
+        ...d,
+        routes: [...(d.routes || []), newRoute],
+      };
+    });
+    const nextConfig = {
+      ...routingConfig,
+      destinations: nextDestinations,
+    };
+    setRoutingConfig(nextConfig);
+    onSave({
+      ...overlays,
+      routingConfig: nextConfig,
     });
     setSelectedRouteId(newRoute.id);
   };
 
   const deleteRoute = (destId, routeId) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa tuyến đường này?")) return;
-    setRoutingConfig((prev) => {
-      const nextDestinations = (prev.destinations || []).map((d) => {
-        if (d.id !== destId) return d;
-        return {
-          ...d,
-          routes: (d.routes || []).filter((r) => r.id !== routeId),
+    setConfirmAction({
+      message: "Bạn có chắc chắn muốn xóa tuyến đường này?",
+      onConfirm: () => {
+        const nextDestinations = (routingConfig.destinations || []).map((d) => {
+          if (d.id !== destId) return d;
+          return {
+            ...d,
+            routes: (d.routes || []).filter((r) => r.id !== routeId),
+          };
+        });
+        const nextConfig = {
+          ...routingConfig,
+          destinations: nextDestinations,
         };
-      });
-      return { ...prev, destinations: nextDestinations };
+        setRoutingConfig(nextConfig);
+        onSave({
+          ...overlays,
+          routingConfig: nextConfig,
+        });
+        if (selectedRouteId === routeId) {
+          setSelectedRouteId("");
+        }
+      }
     });
-    if (selectedRouteId === routeId) {
-      setSelectedRouteId("");
-    }
   };
 
   const updateDestinationField = (destId, field, value) => {
@@ -1470,7 +1613,39 @@ function RoutingEditor({
     });
   };
 
+  const updateRouteFieldAndSave = (destId, routeId, field, value) => {
+    setRoutingConfig((prev) => {
+      const nextDestinations = (prev.destinations || []).map((d) => {
+        if (d.id !== destId) return d;
+        const nextRoutes = (d.routes || []).map((r) => {
+          if (r.id !== routeId) return r;
+          return { ...r, [field]: value };
+        });
+        return { ...d, routes: nextRoutes };
+      });
+      const nextConfig = { ...prev, destinations: nextDestinations };
+      onSave({
+        ...overlays,
+        routingConfig: nextConfig,
+      });
+      return nextConfig;
+    });
+  };
+
   if (activeRouteEdit) {
+    const selectedSegIdx = activeRouteEdit.selectedSegmentIdx;
+    const selectedSeg = selectedSegIdx !== undefined ? activeRouteEdit.segments[selectedSegIdx] : null;
+
+    const updateSelectedSegmentField = (field, value) => {
+      if (selectedSegIdx === undefined) return;
+      const newSegs = [...activeRouteEdit.segments];
+      newSegs[selectedSegIdx] = {
+        ...newSegs[selectedSegIdx],
+        [field]: value
+      };
+      onActiveRouteEditChange({ ...activeRouteEdit, segments: newSegs });
+    };
+
     return (
       <div className="settings-panel">
         <div className="settings-panel-header">
@@ -1507,7 +1682,7 @@ function RoutingEditor({
                   Chọn đoạn để chỉnh sửa thuộc tính:
                 </label>
                 <select
-                  value={activeRouteEdit.selectedSegmentIdx !== undefined ? activeRouteEdit.selectedSegmentIdx : ""}
+                  value={selectedSegIdx !== undefined ? selectedSegIdx : ""}
                   onChange={(e) => onActiveRouteEditChange({
                     ...activeRouteEdit,
                     selectedSegmentIdx: e.target.value !== "" ? Number(e.target.value) : undefined
@@ -1522,55 +1697,34 @@ function RoutingEditor({
                   ))}
                 </select>
 
-                {activeRouteEdit.selectedSegmentIdx !== undefined && activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx] && (
-                  <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "6px", border: "1px solid var(--border)" }}>
-                    <p style={{ fontWeight: "600", fontSize: "12.5px", marginBottom: "8px" }}>Định dạng cho Đoạn {activeRouteEdit.selectedSegmentIdx + 1}:</p>
+                {selectedSegIdx !== undefined && selectedSeg && (
+                  <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "6px", border: "1px solid var(--border)", maxHeight: "400px", overflowY: "auto" }}>
+                    <p style={{ fontWeight: "600", fontSize: "12.5px", marginBottom: "8px" }}>Định dạng cho Đoạn {selectedSegIdx + 1}:</p>
                     
                     <div className="settings-field">
                       <label>Màu sắc đoạn</label>
                       <div className="color-field">
                         <input
                           type="color"
-                          value={activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx].color || activeRouteEdit.color || "#4f46e5"}
-                          onChange={(e) => {
-                            const newSegs = [...activeRouteEdit.segments];
-                            newSegs[activeRouteEdit.selectedSegmentIdx] = {
-                              ...newSegs[activeRouteEdit.selectedSegmentIdx],
-                              color: e.target.value,
-                            };
-                            onActiveRouteEditChange({ ...activeRouteEdit, segments: newSegs });
-                          }}
+                          value={selectedSeg.color || activeRouteEdit.color || "#4f46e5"}
+                          onChange={(e) => updateSelectedSegmentField("color", e.target.value)}
                         />
                         <input
                           type="text"
-                          value={activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx].color || activeRouteEdit.color || "#4f46e5"}
-                          onChange={(e) => {
-                            const newSegs = [...activeRouteEdit.segments];
-                            newSegs[activeRouteEdit.selectedSegmentIdx] = {
-                              ...newSegs[activeRouteEdit.selectedSegmentIdx],
-                              color: e.target.value,
-                            };
-                            onActiveRouteEditChange({ ...activeRouteEdit, segments: newSegs });
-                          }}
+                          value={selectedSeg.color || activeRouteEdit.color || "#4f46e5"}
+                          onChange={(e) => updateSelectedSegmentField("color", e.target.value)}
                         />
                       </div>
                     </div>
 
                     <div className="settings-field">
-                      <label>Độ dày nét vẽ: {activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx].weight !== undefined ? activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx].weight : (activeRouteEdit.weight || 5)}px</label>
+                      <label>Độ dày nét vẽ: {selectedSeg.weight !== undefined ? selectedSeg.weight : (activeRouteEdit.weight || 5)}px</label>
                       <input
                         type="range"
                         min="1"
                         max="20"
-                        value={activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx].weight !== undefined ? activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx].weight : (activeRouteEdit.weight || 5)}
-                        onChange={(e) => {
-                          const newSegs = [...activeRouteEdit.segments];
-                          newSegs[activeRouteEdit.selectedSegmentIdx] = {
-                            ...newSegs[activeRouteEdit.selectedSegmentIdx],
-                            weight: Number(e.target.value),
-                          };
-                          onActiveRouteEditChange({ ...activeRouteEdit, segments: newSegs });
-                        }}
+                        value={selectedSeg.weight !== undefined ? selectedSeg.weight : (activeRouteEdit.weight || 5)}
+                        onChange={(e) => updateSelectedSegmentField("weight", Number(e.target.value))}
                       />
                     </div>
 
@@ -1578,17 +1732,176 @@ function RoutingEditor({
                       <span>Vẽ nét đứt</span>
                       <button
                         type="button"
-                        className={`toggle-switch${activeRouteEdit.segments[activeRouteEdit.selectedSegmentIdx].isDashed ? " active" : ""}`}
-                        onClick={() => {
-                          const newSegs = [...activeRouteEdit.segments];
-                          newSegs[activeRouteEdit.selectedSegmentIdx] = {
-                            ...newSegs[activeRouteEdit.selectedSegmentIdx],
-                            isDashed: !newSegs[activeRouteEdit.selectedSegmentIdx].isDashed,
-                          };
-                          onActiveRouteEditChange({ ...activeRouteEdit, segments: newSegs });
-                        }}
+                        className={`toggle-switch${selectedSeg.isDashed ? " active" : ""}`}
+                        onClick={() => updateSelectedSegmentField("isDashed", !selectedSeg.isDashed)}
                       />
                     </div>
+
+                    {selectedSeg.isDashed && (
+                      <>
+                        <div className="settings-field">
+                          <label>Chiều dài đoạn đứt: {selectedSeg.dashLength || activeRouteEdit.dashLength || 10}px</label>
+                          <input
+                            type="range"
+                            min="1"
+                            max="30"
+                            value={selectedSeg.dashLength || activeRouteEdit.dashLength || 10}
+                            onChange={(e) => updateSelectedSegmentField("dashLength", Number(e.target.value))}
+                          />
+                        </div>
+                        <div className="settings-field">
+                          <label>Khoảng cách đoạn đứt: {selectedSeg.dashSpace || activeRouteEdit.dashSpace || 10}px</label>
+                          <input
+                            type="range"
+                            min="1"
+                            max="30"
+                            value={selectedSeg.dashSpace || activeRouteEdit.dashSpace || 10}
+                            onChange={(e) => updateSelectedSegmentField("dashSpace", Number(e.target.value))}
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* Segment Label Configuration */}
+                    <p style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginTop: "14px", marginBottom: "8px" }}>Cấu hình nhãn đoạn</p>
+                    
+                    <div className="toggle-row">
+                      <span>Hiển thị nhãn trên đoạn</span>
+                      <button
+                        type="button"
+                        className={`toggle-switch${selectedSeg.labelShow ? " active" : ""}`}
+                        onClick={() => updateSelectedSegmentField("labelShow", !selectedSeg.labelShow)}
+                      />
+                    </div>
+
+                    {selectedSeg.labelShow && (
+                      <>
+                        <div className="settings-field">
+                          <label>Nội dung nhãn</label>
+                          <input
+                            type="text"
+                            value={selectedSeg.labelText || ""}
+                            onChange={(e) => updateSelectedSegmentField("labelText", e.target.value)}
+                            placeholder={`Đoạn ${selectedSegIdx + 1}`}
+                          />
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Cỡ chữ nhãn: {selectedSeg.labelFontSize || 12}px</label>
+                          <input
+                            type="number"
+                            min="8"
+                            max="100"
+                            value={selectedSeg.labelFontSize || 12}
+                            onChange={(e) => updateSelectedSegmentField("labelFontSize", Number(e.target.value))}
+                          />
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Màu chữ nhãn</label>
+                          <div className="color-field">
+                            <input
+                              type="color"
+                              value={selectedSeg.labelTextColor || "#1f2937"}
+                              onChange={(e) => updateSelectedSegmentField("labelTextColor", e.target.value)}
+                            />
+                            <input
+                              type="text"
+                              value={selectedSeg.labelTextColor || "#1f2937"}
+                              onChange={(e) => updateSelectedSegmentField("labelTextColor", e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Màu nền nhãn</label>
+                          <div className="color-field">
+                            <input
+                              type="color"
+                              value={selectedSeg.labelBgColor || "#ffffff"}
+                              onChange={(e) => updateSelectedSegmentField("labelBgColor", e.target.value)}
+                            />
+                            <input
+                              type="text"
+                              value={selectedSeg.labelBgColor || "#ffffff"}
+                              onChange={(e) => updateSelectedSegmentField("labelBgColor", e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Màu viền nhãn</label>
+                          <div className="color-field">
+                            <input
+                              type="color"
+                              value={selectedSeg.labelBorderColor || "#4f46e5"}
+                              onChange={(e) => updateSelectedSegmentField("labelBorderColor", e.target.value)}
+                            />
+                            <input
+                              type="text"
+                              value={selectedSeg.labelBorderColor || "#4f46e5"}
+                              onChange={(e) => updateSelectedSegmentField("labelBorderColor", e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Độ mờ nhãn: {selectedSeg.labelOpacity !== undefined ? selectedSeg.labelOpacity : 0.9}</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            value={selectedSeg.labelOpacity !== undefined ? selectedSeg.labelOpacity : 0.9}
+                            onChange={(e) => updateSelectedSegmentField("labelOpacity", Number(e.target.value))}
+                          />
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Khoảng cách lặp lại nhãn: {selectedSeg.labelSpacing || 300}px</label>
+                          <input
+                            type="number"
+                            min="50"
+                            max="2000"
+                            value={selectedSeg.labelSpacing || 300}
+                            onChange={(e) => updateSelectedSegmentField("labelSpacing", Number(e.target.value))}
+                          />
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Zoom nhỏ nhất hiển thị nhãn: {selectedSeg.labelMinZoom || 11}</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="25"
+                            value={selectedSeg.labelMinZoom || 11}
+                            onChange={(e) => updateSelectedSegmentField("labelMinZoom", Number(e.target.value))}
+                          />
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Zoom lớn nhất hiển thị nhãn: {selectedSeg.labelMaxZoom || 45}</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="25"
+                            value={selectedSeg.labelMaxZoom || 45}
+                            onChange={(e) => updateSelectedSegmentField("labelMaxZoom", Number(e.target.value))}
+                          />
+                        </div>
+
+                        <div className="settings-field">
+                          <label>Zoom hiển thị 1 nhãn duy nhất: {selectedSeg.labelSingleZoom || 13}</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="25"
+                            value={selectedSeg.labelSingleZoom || 13}
+                            onChange={(e) => updateSelectedSegmentField("labelSingleZoom", Number(e.target.value))}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -1626,7 +1939,14 @@ function RoutingEditor({
               <button
                 className="btn btn-danger btn-sm"
                 style={{ padding: "2px 6px" }}
-                onClick={() => setRoutingConfig(prev => ({ ...prev, startFeatureId: "" }))}
+                onClick={() => {
+                  const nextConfig = { ...routingConfig, startFeatureId: "" };
+                  setRoutingConfig(nextConfig);
+                  onSave({
+                    ...overlays,
+                    routingConfig: nextConfig,
+                  });
+                }}
                 title="Xóa điểm xuất phát"
               >
                 ✕
@@ -1636,9 +1956,50 @@ function RoutingEditor({
           <button
             type="button"
             className={`btn btn-secondary btn-sm btn-block ${selectingFeatureFor === "start" ? "active" : ""}`}
-            onClick={() => onSelectingFeatureForChange(selectingFeatureFor === "start" ? null : "start")}
+            onClick={() => handleStartSelecting(selectingFeatureFor === "start" ? null : "start")}
           >
             {selectingFeatureFor === "start" ? "📍 Click chọn đối tượng trên bản đồ..." : "Chọn điểm xuất phát trên bản đồ"}
+          </button>
+        </div>
+
+        {/* --- Always Visible Features Selection --- */}
+        <div className="settings-section" style={{ borderBottom: "1px solid var(--border-light)", paddingBottom: "16px", marginTop: "16px" }}>
+          <div className="settings-section-title">Khu vực luôn hiển thị từ đầu</div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", marginBottom: "8px", justifyContent: "space-between" }}>
+            <span style={{ fontSize: "13px", color: "var(--text-secondary)" }}>
+              Số khu vực đã chọn: <strong>{(routingConfig.alwaysVisibleFeatureIds || []).length}</strong>
+            </span>
+            {(routingConfig.alwaysVisibleFeatureIds || []).length > 0 && (
+              <button
+                className="btn btn-danger btn-sm"
+                style={{ padding: "2px 6px", fontSize: "11px" }}
+                onClick={() => {
+                  setConfirmAction({
+                    message: "Xóa tất cả các khu vực luôn hiển thị từ đầu?",
+                    onConfirm: () => {
+                      const nextConfig = {
+                        ...routingConfig,
+                        alwaysVisibleFeatureIds: [],
+                      };
+                      setRoutingConfig(nextConfig);
+                      onSave({
+                        ...overlays,
+                        routingConfig: nextConfig,
+                      });
+                    }
+                  });
+                }}
+              >
+                Xóa hết
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            className={`btn btn-secondary btn-sm btn-block ${selectingFeatureFor === "alwaysVisible" ? "active" : ""}`}
+            onClick={() => handleStartSelecting(selectingFeatureFor === "alwaysVisible" ? null : "alwaysVisible")}
+          >
+            {selectingFeatureFor === "alwaysVisible" ? "📐 Đang quét chuột trên bản đồ để chọn..." : "Quét hộp chọn nhiều khu vực"}
           </button>
         </div>
 
@@ -1696,6 +2057,7 @@ function RoutingEditor({
                           type="text"
                           value={dest.name}
                           onChange={(e) => updateDestinationField(dest.id, "name", e.target.value)}
+                          onBlur={handleSaveConfig}
                         />
                       </div>
 
@@ -1704,7 +2066,7 @@ function RoutingEditor({
                         <button
                           type="button"
                           className={`btn btn-secondary btn-sm btn-block ${selectingFeatureFor === `dest-${dest.id}` ? "active" : ""}`}
-                          onClick={() => onSelectingFeatureForChange(selectingFeatureFor === `dest-${dest.id}` ? null : `dest-${dest.id}`)}
+                          onClick={() => handleStartSelecting(selectingFeatureFor === `dest-${dest.id}` ? null : `dest-${dest.id}`)}
                         >
                           {selectingFeatureFor === `dest-${dest.id}` ? "📍 Click chọn polygon trên bản đồ..." : "Chọn vị trí trên bản đồ"}
                         </button>
@@ -1755,7 +2117,7 @@ function RoutingEditor({
                                     <input
                                       type="text"
                                       value={route.name}
-                                      onChange={(e) => updateRouteField(dest.id, route.id, "name", e.target.value)}
+                                      onChange={(e) => updateRouteField(dest.id, route.id, "name", e.target.value)} onBlur={handleSaveConfig}
                                     />
                                   </div>
 
@@ -1764,7 +2126,7 @@ function RoutingEditor({
                                       type="button"
                                       className="btn btn-primary btn-sm btn-block"
                                       onClick={() => {
-                                        onActiveRouteEditChange({
+                                        handleStartDrawing({
                                           destId: dest.id,
                                           id: route.id,
                                           name: route.name,
@@ -1803,12 +2165,12 @@ function RoutingEditor({
                                       <input
                                         type="color"
                                         value={route.color || "#4f46e5"}
-                                        onChange={(e) => updateRouteField(dest.id, route.id, "color", e.target.value)}
+                                        onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "color", e.target.value)}
                                       />
                                       <input
                                         type="text"
                                         value={route.color || "#4f46e5"}
-                                        onChange={(e) => updateRouteField(dest.id, route.id, "color", e.target.value)}
+                                        onChange={(e) => updateRouteField(dest.id, route.id, "color", e.target.value)} onBlur={handleSaveConfig}
                                       />
                                     </div>
                                   </div>
@@ -1820,7 +2182,7 @@ function RoutingEditor({
                                       min="1"
                                       max="20"
                                       value={route.weight || 5}
-                                      onChange={(e) => updateRouteField(dest.id, route.id, "weight", Number(e.target.value))}
+                                      onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "weight", Number(e.target.value))}
                                     />
                                   </div>
 
@@ -1829,7 +2191,7 @@ function RoutingEditor({
                                     <button
                                       type="button"
                                       className={`toggle-switch${route.isDashed ? " active" : ""}`}
-                                      onClick={() => updateRouteField(dest.id, route.id, "isDashed", !route.isDashed)}
+                                      onClick={() => updateRouteFieldAndSave(dest.id, route.id, "isDashed", !route.isDashed)}
                                     />
                                   </div>
 
@@ -1842,7 +2204,7 @@ function RoutingEditor({
                                           min="1"
                                           max="30"
                                           value={route.dashLength || 10}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "dashLength", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "dashLength", Number(e.target.value))}
                                         />
                                       </div>
                                       <div className="settings-field">
@@ -1852,7 +2214,7 @@ function RoutingEditor({
                                           min="1"
                                           max="30"
                                           value={route.dashSpace || 10}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "dashSpace", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "dashSpace", Number(e.target.value))}
                                         />
                                       </div>
                                     </>
@@ -1866,7 +2228,7 @@ function RoutingEditor({
                                     <button
                                       type="button"
                                       className={`toggle-switch${route.labelShow ? " active" : ""}`}
-                                      onClick={() => updateRouteField(dest.id, route.id, "labelShow", !route.labelShow)}
+                                      onClick={() => updateRouteFieldAndSave(dest.id, route.id, "labelShow", !route.labelShow)}
                                     />
                                   </div>
 
@@ -1877,7 +2239,7 @@ function RoutingEditor({
                                         <input
                                           type="text"
                                           value={route.labelText || ""}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelText", e.target.value)}
+                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelText", e.target.value)} onBlur={handleSaveConfig}
                                           placeholder={route.name}
                                         />
                                       </div>
@@ -1889,7 +2251,7 @@ function RoutingEditor({
                                           min="8"
                                           max="100"
                                           value={route.labelFontSize || 12}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelFontSize", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelFontSize", Number(e.target.value))}
                                         />
                                       </div>
 
@@ -1899,12 +2261,12 @@ function RoutingEditor({
                                           <input
                                             type="color"
                                             value={route.labelTextColor || "#ffffff"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelTextColor", e.target.value)}
+                                            onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelTextColor", e.target.value)}
                                           />
                                           <input
                                             type="text"
                                             value={route.labelTextColor || "#ffffff"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelTextColor", e.target.value)}
+                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelTextColor", e.target.value)} onBlur={handleSaveConfig}
                                           />
                                         </div>
                                       </div>
@@ -1915,12 +2277,12 @@ function RoutingEditor({
                                           <input
                                             type="color"
                                             value={route.labelBgColor || "#4f46e5"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBgColor", e.target.value)}
+                                            onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelBgColor", e.target.value)}
                                           />
                                           <input
                                             type="text"
                                             value={route.labelBgColor || "#4f46e5"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBgColor", e.target.value)}
+                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBgColor", e.target.value)} onBlur={handleSaveConfig}
                                           />
                                         </div>
                                       </div>
@@ -1931,12 +2293,12 @@ function RoutingEditor({
                                           <input
                                             type="color"
                                             value={route.labelBorderColor || "#312e81"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBorderColor", e.target.value)}
+                                            onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelBorderColor", e.target.value)}
                                           />
                                           <input
                                             type="text"
                                             value={route.labelBorderColor || "#312e81"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBorderColor", e.target.value)}
+                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBorderColor", e.target.value)} onBlur={handleSaveConfig}
                                           />
                                         </div>
                                       </div>
@@ -1949,7 +2311,7 @@ function RoutingEditor({
                                           max="1"
                                           step="0.1"
                                           value={route.labelOpacity !== undefined ? route.labelOpacity : 1}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelOpacity", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelOpacity", Number(e.target.value))}
                                         />
                                       </div>
 
@@ -1960,7 +2322,7 @@ function RoutingEditor({
                                           min="50"
                                           max="2000"
                                           value={route.labelSpacing || 300}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelSpacing", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelSpacing", Number(e.target.value))}
                                         />
                                       </div>
 
@@ -1971,7 +2333,7 @@ function RoutingEditor({
                                           min="1"
                                           max="25"
                                           value={route.labelMinZoom || 10}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelMinZoom", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelMinZoom", Number(e.target.value))}
                                         />
                                       </div>
 
@@ -1982,7 +2344,7 @@ function RoutingEditor({
                                           min="1"
                                           max="25"
                                           value={route.labelMaxZoom || 20}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelMaxZoom", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelMaxZoom", Number(e.target.value))}
                                         />
                                       </div>
 
@@ -1993,7 +2355,7 @@ function RoutingEditor({
                                           min="1"
                                           max="25"
                                           value={route.labelSingleZoom || 15}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelSingleZoom", Number(e.target.value))}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelSingleZoom", Number(e.target.value))}
                                         />
                                       </div>
                                     </>
@@ -2019,6 +2381,35 @@ function RoutingEditor({
           </button>
         </div>
       </div>
+      {confirmAction && (
+        <ConfirmDialog
+          message={confirmAction.message}
+          onConfirm={() => {
+            confirmAction.onConfirm();
+            setConfirmAction(null);
+          }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
     </div>
   );
 }
+
+function ConfirmDialog({ message, onConfirm, onCancel }) {
+  return (
+    <div className="confirm-modal-overlay">
+      <div className="confirm-modal-box">
+        <p>{message}</p>
+        <div className="confirm-modal-actions">
+          <button className="btn btn-secondary btn-sm" onClick={onCancel} type="button">
+            Hủy
+          </button>
+          <button className="btn btn-danger btn-sm" onClick={onConfirm} type="button">
+            Xác nhận xóa
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+

@@ -1,9 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Background circle -->
   <circle cx="32" cy="32" r="30" fill="#e0f2fe"/>
-  <path d="M12 44 Q 22 40, 32 44 T 52 44" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
-  <path d="M16 50 Q 26 46, 36 50 T 48 50" fill="none" stroke="#0ea5e9" stroke-width="3" stroke-linecap="round"/>
-  <path d="M10 42 Q 32 20, 54 42" fill="none" stroke="#f43f5e" stroke-width="8" stroke-linecap="round"/>
-  <path d="M10 42 Q 32 25, 54 42" fill="none" stroke="#fda4af" stroke-width="2" stroke-linecap="round"/>
-  <rect x="22" y="32" width="4" height="12" fill="#e11d48" rx="1"/>
-  <rect x="38" y="32" width="4" height="12" fill="#e11d48" rx="1"/>
+  
+  <!-- Water waves -->
+  <path d="M8 50 Q16 47, 24 50 T40 50 T56 50" fill="none" stroke="#7dd3fc" stroke-width="2" stroke-linecap="round"/>
+  <path d="M6 54 Q14 51, 22 54 T38 54 T54 54" fill="none" stroke="#bae6fd" stroke-width="1.5" stroke-linecap="round"/>
+  
+  <!-- Bridge deck (road surface) -->
+  <rect x="6" y="40" width="52" height="5" rx="2" fill="#64748b"/>
+  <rect x="6" y="41" width="52" height="2" rx="1" fill="#94a3b8"/>
+  
+  <!-- Left tower -->
+  <rect x="18" y="18" width="3" height="27" rx="0.8" fill="#334155"/>
+  <rect x="17.5" y="16" width="4" height="4" rx="1" fill="#475569"/>
+  
+  <!-- Right tower -->
+  <rect x="43" y="18" width="3" height="27" rx="0.8" fill="#334155"/>
+  <rect x="42.5" y="16" width="4" height="4" rx="1" fill="#475569"/>
+  
+  <!-- Left tower cables (fan pattern) -->
+  <line x1="19.5" y1="18" x2="8" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="19.5" y1="18" x2="11" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="19.5" y1="18" x2="14" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="19.5" y1="18" x2="23" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="19.5" y1="18" x2="26" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="19.5" y1="18" x2="29" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  
+  <!-- Right tower cables (fan pattern) -->
+  <line x1="44.5" y1="18" x2="56" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="44.5" y1="18" x2="53" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="44.5" y1="18" x2="50" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="44.5" y1="18" x2="41" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="44.5" y1="18" x2="38" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  <line x1="44.5" y1="18" x2="35" y2="40" stroke="#e11d48" stroke-width="1" stroke-linecap="round"/>
+  
+  <!-- Center span cables connecting towers -->
+  <line x1="19.5" y1="18" x2="32" y2="40" stroke="#f43f5e" stroke-width="0.8" stroke-linecap="round"/>
+  <line x1="44.5" y1="18" x2="32" y2="40" stroke="#f43f5e" stroke-width="0.8" stroke-linecap="round"/>
+  
+  <!-- Road lane markings -->
+  <line x1="10" y1="42.5" x2="14" y2="42.5" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 2"/>
+  <line x1="22" y1="42.5" x2="42" y2="42.5" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 2"/>
+  <line x1="50" y1="42.5" x2="54" y2="42.5" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 2"/>
 </svg>
