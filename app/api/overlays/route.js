@@ -20,7 +20,7 @@ export async function GET() {
 
     if (blobConfigured) {
       console.log("Vercel Blob detected. Fetching overlays from blob storage...");
-      const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
+      const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
       
       // Filter all blobs starting with "overlays" and ending with ".json" (robust to random suffixes)
       const overlaysBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json"));
@@ -147,7 +147,7 @@ export async function POST(request) {
 
       // 2. Clean up old overlays.json blobs asynchronously to free up Vercel storage space
       try {
-        const { blobs } = await list({ token: process.env.BLOB_READ_WRITE_TOKEN });
+        const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
         // Correct filter pattern matching random suffixes (starts with overlays, ends with .json)
         const oldBlobs = blobs.filter(
           (b) =>
