@@ -25,16 +25,29 @@ export async function GET(request) {
     if (blobConfigured) {
       console.log("Vercel Blob detected. Fetching overlays from blob storage...");
       
-      // If we don't have the cached URL yet, list blobs to find it
-      if (!cachedBlobUrl) {
+      // If BLOB_STORE_URL environment variable is provided, construct the URL directly.
+      // This completely avoids calling the expensive list() operation (Advanced Operation),
+      // which is critical if the monthly 2,000 Advanced Operations limit is reached.
+      if (process.env.BLOB_STORE_URL) {
+        cachedBlobUrl = `${process.env.BLOB_STORE_URL.replace(/\/$/, "")}/overlays.json`;
+      } else if (!cachedBlobUrl) {
         console.log("Blob URL cache miss. Listing blobs to find overlays.json...");
-        const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
-        const overlaysBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json"));
+        try {
+          const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
+          const overlaysBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json"));
 
-        if (overlaysBlobs.length > 0) {
-          // Sort by uploadedAt descending to find the newest existing one (for transition)
-          overlaysBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-          cachedBlobUrl = overlaysBlobs[0].url;
+          if (overlaysBlobs.length > 0) {
+            // Sort by uploadedAt descending to find the newest existing one (for transition)
+            overlaysBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+            cachedBlobUrl = overlaysBlobs[0].url;
+          }
+        } catch (listError) {
+          console.error("Failed to list Vercel blobs (likely Advanced Operations limit reached 2k/2k):", listError.message);
+          throw new Error(
+            "Vercel Blob Advanced Operations limit reached (2,000/2,000). " +
+            "Please configure the 'BLOB_STORE_URL' environment variable in your Vercel Project Settings " +
+            "with the value of your Blob store domain (e.g. 'https://xxxx.public.blob.vercel-storage.com') to bypass this limit."
+          );
         }
       }
 
@@ -59,14 +72,30 @@ export async function GET(request) {
         }
       }
 
-      // Check if a newer KML convert was deployed (bundled initial-overlays.json is newer)
-      if (data && initialData._convertedAt) {
-        const blobTime = data._convertedAt ? new Date(data._convertedAt).getTime() : 0;
-        const initialTime = new Date(initialData._convertedAt).getTime();
+      // Load the bundled data (either from public/data/overlays.json or fallback to initial-overlays.json)
+      let bundledData;
+      try {
+        const bundledPath = path.join(process.cwd(), "public", "data", "overlays.json");
+        const bundledContent = await readFile(bundledPath, "utf8");
+        bundledData = JSON.parse(bundledContent);
+      } catch (err) {
+        bundledData = initialData;
+      }
 
-        if (initialTime > blobTime) {
-          console.log(`Newer KML convert detected (${initialData._convertedAt} > ${data._convertedAt || 'none'}). Syncing blob...`);
-          data = initialData;
+      // Check if the bundled version is newer than the one in Vercel Blob
+      if (data) {
+        const blobTime = Math.max(
+          data._updatedAt ? new Date(data._updatedAt).getTime() : 0,
+          data._convertedAt ? new Date(data._convertedAt).getTime() : 0
+        );
+        const bundledTime = Math.max(
+          bundledData._updatedAt ? new Date(bundledData._updatedAt).getTime() : 0,
+          bundledData._convertedAt ? new Date(bundledData._convertedAt).getTime() : 0
+        );
+
+        if (bundledTime > blobTime) {
+          console.log(`Newer bundled overlays detected (${bundledTime} > ${blobTime}). Syncing blob...`);
+          data = bundledData;
 
           try {
             // Upload new merged data directly (without random suffix to overwrite overlays.json)
@@ -77,25 +106,29 @@ export async function GET(request) {
               token: process.env.BLOB_READ_WRITE_TOKEN,
             });
             cachedBlobUrl = newBlob.url;
-            console.log("Blob storage updated with converted data.");
+            console.log("Blob storage updated with newer bundled data.");
 
             // Clean up any old suffix-based blobs that might be left in storage
-            const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
-            const oldSuffixBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json") && b.url !== newBlob.url);
-            if (oldSuffixBlobs.length > 0) {
-              console.log(`Cleaning up ${oldSuffixBlobs.length} older suffix-based blobs...`);
-              await del(oldSuffixBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });
+            try {
+              const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
+              const oldSuffixBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json") && b.url !== newBlob.url);
+              if (oldSuffixBlobs.length > 0) {
+                console.log(`Cleaning up ${oldSuffixBlobs.length} older suffix-based blobs...`);
+                await del(oldSuffixBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });
+              }
+            } catch (listError) {
+              console.warn("Failed to list/delete old suffix blobs during sync (non-fatal):", listError.message);
             }
           } catch (syncError) {
-            console.warn("Failed to sync blob with converted data:", syncError.message);
+            console.warn("Failed to sync blob with newer bundled data:", syncError.message);
           }
         }
       }
 
-      // If no blob exists yet on Vercel Blob, initialize it using our bundled initialData
+      // If no blob exists yet on Vercel Blob, initialize it using our bundled data
       if (!data) {
-        console.log("Overlays blob not found in store. Initializing Vercel Blob storage with static initial-overlays.json...");
-        data = initialData;
+        console.log("Overlays blob not found in store. Initializing Vercel Blob storage with bundled data...");
+        data = bundledData;
 
         // Use addRandomSuffix: false to maintain a single overlays.json file
         const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
@@ -144,6 +177,9 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const data = await request.json();
+    
+    // Set timestamp of update to enable deployment-syncing
+    data._updatedAt = new Date().toISOString();
     
     // Ensure _convertedAt is preserved from initialData if missing, preventing false-positive overwrites
     if (!data._convertedAt && initialData._convertedAt) {
