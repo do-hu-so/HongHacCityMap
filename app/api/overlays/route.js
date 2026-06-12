@@ -16,7 +16,12 @@ function isSupabaseConfigured() {
 
 // Helper to get sanitized Supabase credentials
 function getSupabaseCredentials() {
-  let url = (process.env.SUPABASE_URL || "").trim().replace(/\/$/, "");
+  let url = (process.env.SUPABASE_URL || "").trim();
+  // Strip trailing slashes and /rest/v1 if present
+  url = url.replace(/\/$/, "");
+  url = url.replace(/\/rest\/v1$/i, "");
+  url = url.replace(/\/$/, "");
+  
   if (url && !/^https?:\/\//i.test(url)) {
     url = `https://${url}`;
   }
