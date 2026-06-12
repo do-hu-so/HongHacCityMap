@@ -14,6 +14,10 @@ export default function SettingsPanel({
   geojson,
   selectingFeatureFor,
   onSelectingFeatureForChange,
+  selectedRouteId,
+  onSelectedRouteIdChange,
+  selectedRouteSegIdx,
+  onSelectedRouteSegIdxChange,
 }) {
   // --- Routing management ---
   if (info.type === "routing") {
@@ -27,6 +31,10 @@ export default function SettingsPanel({
         geojson={geojson}
         selectingFeatureFor={selectingFeatureFor}
         onSelectingFeatureForChange={onSelectingFeatureForChange}
+        selectedRouteId={selectedRouteId}
+        onSelectedRouteIdChange={onSelectedRouteIdChange}
+        selectedRouteSegIdx={selectedRouteSegIdx}
+        onSelectedRouteSegIdxChange={onSelectedRouteSegIdxChange}
       />
     );
   }
@@ -1404,14 +1412,22 @@ function RoutingEditor({
   geojson,
   selectingFeatureFor,
   onSelectingFeatureForChange,
+  selectedRouteId,
+  onSelectedRouteIdChange,
+  selectedRouteSegIdx,
+  onSelectedRouteSegIdxChange,
 }) {
   const [routingConfig, setRoutingConfig] = useState(
     overlays?.routingConfig || { startFeatureId: "", destinations: [] }
   );
   const [selectedDestId, setSelectedDestId] = useState("");
-  const [selectedRouteId, setSelectedRouteId] = useState("");
   const lastSyncedConfigRef = useRef(null);
   const [confirmAction, setConfirmAction] = useState(null);
+
+  const handleSetSelectedRouteId = (val) => {
+    onSelectedRouteIdChange(val);
+    onSelectedRouteSegIdxChange(undefined);
+  };
 
   useEffect(() => {
     if (overlays?.routingConfig) {
@@ -1513,7 +1529,7 @@ function RoutingEditor({
         });
         if (selectedDestId === destId) {
           setSelectedDestId("");
-          setSelectedRouteId("");
+          handleSetSelectedRouteId("");
         }
       }
     });
@@ -1559,7 +1575,7 @@ function RoutingEditor({
       ...overlays,
       routingConfig: nextConfig,
     });
-    setSelectedRouteId(newRoute.id);
+    handleSetSelectedRouteId(newRoute.id);
   };
 
   const deleteRoute = (destId, routeId) => {
@@ -1583,7 +1599,7 @@ function RoutingEditor({
           routingConfig: nextConfig,
         });
         if (selectedRouteId === routeId) {
-          setSelectedRouteId("");
+          handleSetSelectedRouteId("");
         }
       }
     });
@@ -1599,13 +1615,24 @@ function RoutingEditor({
     });
   };
 
+  const sanitizeValue = (field, value) => {
+    if ((field === "color" || field === "labelTextColor" || field === "labelBgColor" || field === "labelBorderColor") && typeof value === "string") {
+      const cleanHex = value.replace(/#/g, "");
+      if (cleanHex.length > 0) {
+        return "#" + cleanHex;
+      }
+    }
+    return value;
+  };
+
   const updateRouteField = (destId, routeId, field, value) => {
+    const sanitizedVal = sanitizeValue(field, value);
     setRoutingConfig((prev) => {
       const nextDestinations = (prev.destinations || []).map((d) => {
         if (d.id !== destId) return d;
         const nextRoutes = (d.routes || []).map((r) => {
           if (r.id !== routeId) return r;
-          return { ...r, [field]: value };
+          return { ...r, [field]: sanitizedVal };
         });
         return { ...d, routes: nextRoutes };
       });
@@ -1614,12 +1641,56 @@ function RoutingEditor({
   };
 
   const updateRouteFieldAndSave = (destId, routeId, field, value) => {
+    const sanitizedVal = sanitizeValue(field, value);
     setRoutingConfig((prev) => {
       const nextDestinations = (prev.destinations || []).map((d) => {
         if (d.id !== destId) return d;
         const nextRoutes = (d.routes || []).map((r) => {
           if (r.id !== routeId) return r;
-          return { ...r, [field]: value };
+          return { ...r, [field]: sanitizedVal };
+        });
+        return { ...d, routes: nextRoutes };
+      });
+      const nextConfig = { ...prev, destinations: nextDestinations };
+      onSave({
+        ...overlays,
+        routingConfig: nextConfig,
+      });
+      return nextConfig;
+    });
+  };
+
+  const updateRouteSegmentField = (destId, routeId, segmentIdx, field, value) => {
+    const sanitizedVal = sanitizeValue(field, value);
+    setRoutingConfig((prev) => {
+      const nextDestinations = (prev.destinations || []).map((d) => {
+        if (d.id !== destId) return d;
+        const nextRoutes = (d.routes || []).map((r) => {
+          if (r.id !== routeId) return r;
+          const nextSegments = (r.segments || []).map((seg, sIdx) => {
+            if (sIdx !== segmentIdx) return seg;
+            return { ...seg, [field]: sanitizedVal };
+          });
+          return { ...r, segments: nextSegments };
+        });
+        return { ...d, routes: nextRoutes };
+      });
+      return { ...prev, destinations: nextDestinations };
+    });
+  };
+
+  const updateRouteSegmentFieldAndSave = (destId, routeId, segmentIdx, field, value) => {
+    const sanitizedVal = sanitizeValue(field, value);
+    setRoutingConfig((prev) => {
+      const nextDestinations = (prev.destinations || []).map((d) => {
+        if (d.id !== destId) return d;
+        const nextRoutes = (d.routes || []).map((r) => {
+          if (r.id !== routeId) return r;
+          const nextSegments = (r.segments || []).map((seg, sIdx) => {
+            if (sIdx !== segmentIdx) return seg;
+            return { ...seg, [field]: sanitizedVal };
+          });
+          return { ...r, segments: nextSegments };
         });
         return { ...d, routes: nextRoutes };
       });
@@ -2097,7 +2168,7 @@ function RoutingEditor({
                               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span
                                   style={{ fontSize: "13px", fontWeight: "600", cursor: "pointer", flex: 1 }}
-                                  onClick={() => setSelectedRouteId(isRouteExpanded ? "" : route.id)}
+                                  onClick={() => handleSetSelectedRouteId(isRouteExpanded ? "" : route.id)}
                                 >
                                   📍 {route.name || "Tuyến mới"} {isRouteExpanded ? "▲" : "▼"}
                                 </span>
@@ -2156,208 +2227,466 @@ function RoutingEditor({
                                     </button>
                                   </div>
 
-                                  {/* Route Styling */}
-                                  <p style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "8px" }}>Giao diện đường đi</p>
-                                  
-                                  <div className="settings-field">
-                                    <label>Màu sắc</label>
-                                    <div className="color-field">
-                                      <input
-                                        type="color"
-                                        value={route.color || "#4f46e5"}
-                                        onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "color", e.target.value)}
-                                      />
-                                      <input
-                                        type="text"
-                                        value={route.color || "#4f46e5"}
-                                        onChange={(e) => updateRouteField(dest.id, route.id, "color", e.target.value)} onBlur={handleSaveConfig}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div className="settings-field">
-                                    <label>Độ dày nét vẽ: {route.weight || 5}px</label>
-                                    <input
-                                      type="range"
-                                      min="1"
-                                      max="20"
-                                      value={route.weight || 5}
-                                      onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "weight", Number(e.target.value))}
-                                    />
-                                  </div>
-
-                                  <div className="toggle-row">
-                                    <span>Vẽ nét đứt (dashed)</span>
+                                  <div className="toggle-row" style={{ marginTop: "12px", marginBottom: "12px" }}>
+                                    <span>Cài đặt kiểu riêng từng đoạn</span>
                                     <button
                                       type="button"
-                                      className={`toggle-switch${route.isDashed ? " active" : ""}`}
-                                      onClick={() => updateRouteFieldAndSave(dest.id, route.id, "isDashed", !route.isDashed)}
+                                      className={`toggle-switch${route.editPerSegment ? " active" : ""}`}
+                                      onClick={() => {
+                                        updateRouteFieldAndSave(dest.id, route.id, "editPerSegment", !route.editPerSegment);
+                                        onSelectedRouteSegIdxChange(undefined);
+                                      }}
                                     />
                                   </div>
 
-                                  {route.isDashed && (
+                                  {route.editPerSegment ? (
+                                    route.segments && route.segments.length > 0 ? (
+                                      <div style={{ marginTop: "12px" }}>
+                                        <label style={{ fontSize: "12px", fontWeight: "600", display: "block", marginBottom: "6px" }}>
+                                          Chọn đoạn để chỉnh sửa thuộc tính:
+                                        </label>
+                                        <select
+                                          value={selectedRouteSegIdx !== undefined ? selectedRouteSegIdx : ""}
+                                          onChange={(e) => onSelectedRouteSegIdxChange(e.target.value !== "" ? Number(e.target.value) : undefined)}
+                                          style={{ width: "100%", padding: "8px", marginBottom: "12px", background: "var(--bg-primary)", color: "var(--text-primary)", border: "1px solid var(--border)" }}
+                                        >
+                                          <option value="">-- Chọn đoạn đường --</option>
+                                          {route.segments.map((seg, idx) => (
+                                            <option key={idx} value={idx}>
+                                              Đoạn {idx + 1} ({seg.coords?.length || 0} điểm)
+                                            </option>
+                                          ))}
+                                        </select>
+
+                                        {selectedRouteSegIdx !== undefined && route.segments[selectedRouteSegIdx] && (() => {
+                                          const selectedSeg = route.segments[selectedRouteSegIdx];
+                                          const selectedSegIdx = selectedRouteSegIdx;
+                                          
+                                          return (
+                                            <div style={{ padding: "12px", background: "var(--bg-secondary)", borderRadius: "6px", border: "1px solid var(--border-light)", maxHeight: "400px", overflowY: "auto" }}>
+                                              <p style={{ fontWeight: "600", fontSize: "12px", marginBottom: "8px" }}>Định dạng cho Đoạn {selectedSegIdx + 1}:</p>
+                                              
+                                              <div className="settings-field">
+                                                <label>Màu sắc đoạn</label>
+                                                <div className="color-field">
+                                                  <input
+                                                    type="color"
+                                                    value={selectedSeg.color || route.color || "#4f46e5"}
+                                                    onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "color", e.target.value)}
+                                                  />
+                                                  <input
+                                                    type="text"
+                                                    value={selectedSeg.color || route.color || "#4f46e5"}
+                                                    onChange={(e) => updateRouteSegmentField(dest.id, route.id, selectedSegIdx, "color", e.target.value)}
+                                                    onBlur={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "color", e.target.value)}
+                                                  />
+                                                </div>
+                                              </div>
+
+                                              <div className="settings-field">
+                                                <label>Độ dày nét vẽ: {selectedSeg.weight !== undefined ? selectedSeg.weight : (route.weight || 5)}px</label>
+                                                <input
+                                                  type="range"
+                                                  min="1"
+                                                  max="20"
+                                                  value={selectedSeg.weight !== undefined ? selectedSeg.weight : (route.weight || 5)}
+                                                  onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "weight", Number(e.target.value))}
+                                                />
+                                              </div>
+
+                                              <div className="toggle-row">
+                                                <span>Vẽ nét đứt</span>
+                                                <button
+                                                  type="button"
+                                                  className={`toggle-switch${selectedSeg.isDashed ? " active" : ""}`}
+                                                  onClick={() => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "isDashed", !selectedSeg.isDashed)}
+                                                />
+                                              </div>
+
+                                              {selectedSeg.isDashed && (
+                                                <>
+                                                  <div className="settings-field">
+                                                    <label>Chiều dài đoạn đứt: {selectedSeg.dashLength || route.dashLength || 10}px</label>
+                                                    <input
+                                                      type="range"
+                                                      min="1"
+                                                      max="30"
+                                                      value={selectedSeg.dashLength || route.dashLength || 10}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "dashLength", Number(e.target.value))}
+                                                    />
+                                                  </div>
+                                                  <div className="settings-field">
+                                                    <label>Khoảng cách đoạn đứt: {selectedSeg.dashSpace || route.dashSpace || 10}px</label>
+                                                    <input
+                                                      type="range"
+                                                      min="1"
+                                                      max="30"
+                                                      value={selectedSeg.dashSpace || route.dashSpace || 10}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "dashSpace", Number(e.target.value))}
+                                                    />
+                                                  </div>
+                                                </>
+                                              )}
+
+                                              {/* Segment Label Config */}
+                                              <p style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginTop: "14px", marginBottom: "8px" }}>Cấu hình nhãn đoạn</p>
+                                              
+                                              <div className="toggle-row">
+                                                <span>Hiển thị nhãn trên đoạn</span>
+                                                <button
+                                                  type="button"
+                                                  className={`toggle-switch${selectedSeg.labelShow ? " active" : ""}`}
+                                                  onClick={() => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelShow", !selectedSeg.labelShow)}
+                                                />
+                                              </div>
+
+                                              {selectedSeg.labelShow && (
+                                                <>
+                                                  <div className="settings-field">
+                                                    <label>Nội dung nhãn</label>
+                                                    <input
+                                                      type="text"
+                                                      value={selectedSeg.labelText || ""}
+                                                      onChange={(e) => updateRouteSegmentField(dest.id, route.id, selectedSegIdx, "labelText", e.target.value)}
+                                                      onBlur={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelText", e.target.value)}
+                                                      placeholder={`Đoạn ${selectedSegIdx + 1}`}
+                                                    />
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Cỡ chữ nhãn: {selectedSeg.labelFontSize || 12}px</label>
+                                                    <input
+                                                      type="number"
+                                                      min="8"
+                                                      max="100"
+                                                      value={selectedSeg.labelFontSize || 12}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelFontSize", Number(e.target.value))}
+                                                    />
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Màu chữ nhãn</label>
+                                                    <div className="color-field">
+                                                      <input
+                                                        type="color"
+                                                        value={selectedSeg.labelTextColor || "#1f2937"}
+                                                        onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelTextColor", e.target.value)}
+                                                      />
+                                                      <input
+                                                        type="text"
+                                                        value={selectedSeg.labelTextColor || "#1f2937"}
+                                                        onChange={(e) => updateRouteSegmentField(dest.id, route.id, selectedSegIdx, "labelTextColor", e.target.value)}
+                                                        onBlur={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelTextColor", e.target.value)}
+                                                      />
+                                                    </div>
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Màu nền nhãn</label>
+                                                    <div className="color-field">
+                                                      <input
+                                                        type="color"
+                                                        value={selectedSeg.labelBgColor || "#ffffff"}
+                                                        onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelBgColor", e.target.value)}
+                                                      />
+                                                      <input
+                                                        type="text"
+                                                        value={selectedSeg.labelBgColor || "#ffffff"}
+                                                        onChange={(e) => updateRouteSegmentField(dest.id, route.id, selectedSegIdx, "labelBgColor", e.target.value)}
+                                                        onBlur={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelBgColor", e.target.value)}
+                                                      />
+                                                    </div>
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Màu viền nhãn</label>
+                                                    <div className="color-field">
+                                                      <input
+                                                        type="color"
+                                                        value={selectedSeg.labelBorderColor || "#4f46e5"}
+                                                        onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelBorderColor", e.target.value)}
+                                                      />
+                                                      <input
+                                                        type="text"
+                                                        value={selectedSeg.labelBorderColor || "#4f46e5"}
+                                                        onChange={(e) => updateRouteSegmentField(dest.id, route.id, selectedSegIdx, "labelBorderColor", e.target.value)}
+                                                        onBlur={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelBorderColor", e.target.value)}
+                                                      />
+                                                    </div>
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Độ mờ nhãn: {selectedSeg.labelOpacity !== undefined ? selectedSeg.labelOpacity : 0.9}</label>
+                                                    <input
+                                                      type="range"
+                                                      min="0"
+                                                      max="1"
+                                                      step="0.1"
+                                                      value={selectedSeg.labelOpacity !== undefined ? selectedSeg.labelOpacity : 0.9}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelOpacity", Number(e.target.value))}
+                                                    />
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Khoảng cách lặp lại nhãn: {selectedSeg.labelSpacing || 300}px</label>
+                                                    <input
+                                                      type="number"
+                                                      min="50"
+                                                      max="2000"
+                                                      value={selectedSeg.labelSpacing || 300}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelSpacing", Number(e.target.value))}
+                                                    />
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Zoom nhỏ nhất hiển thị nhãn: {selectedSeg.labelMinZoom || 11}</label>
+                                                    <input
+                                                      type="number"
+                                                      min="1"
+                                                      max="25"
+                                                      value={selectedSeg.labelMinZoom || 11}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelMinZoom", Number(e.target.value))}
+                                                    />
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Zoom lớn nhất hiển thị nhãn: {selectedSeg.labelMaxZoom || 45}</label>
+                                                    <input
+                                                      type="number"
+                                                      min="1"
+                                                      max="25"
+                                                      value={selectedSeg.labelMaxZoom || 45}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelMaxZoom", Number(e.target.value))}
+                                                    />
+                                                  </div>
+
+                                                  <div className="settings-field">
+                                                    <label>Zoom hiển thị 1 nhãn duy nhất: {selectedSeg.labelSingleZoom || 13}</label>
+                                                    <input
+                                                      type="number"
+                                                      min="1"
+                                                      max="25"
+                                                      value={selectedSeg.labelSingleZoom || 13}
+                                                      onChange={(e) => updateRouteSegmentFieldAndSave(dest.id, route.id, selectedSegIdx, "labelSingleZoom", Number(e.target.value))}
+                                                    />
+                                                  </div>
+                                                </>
+                                              )}
+                                            </div>
+                                          );
+                                        })()}
+                                      </div>
+                                    ) : (
+                                      <p style={{ fontSize: "12px", color: "var(--text-secondary)", fontStyle: "italic", margin: "10px 0" }}>
+                                        Tuyến đường chưa có đoạn nào. Hãy vẽ đường đi trên bản đồ trước.
+                                      </p>
+                                    )
+                                  ) : (
                                     <>
+                                      {/* Route Styling */}
+                                      <p style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "8px" }}>Giao diện đường đi</p>
+                                      
                                       <div className="settings-field">
-                                        <label>Chiều dài đoạn đứt: {route.dashLength || 10}px</label>
-                                        <input
-                                          type="range"
-                                          min="1"
-                                          max="30"
-                                          value={route.dashLength || 10}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "dashLength", Number(e.target.value))}
-                                        />
-                                      </div>
-                                      <div className="settings-field">
-                                        <label>Khoảng cách đoạn đứt: {route.dashSpace || 10}px</label>
-                                        <input
-                                          type="range"
-                                          min="1"
-                                          max="30"
-                                          value={route.dashSpace || 10}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "dashSpace", Number(e.target.value))}
-                                        />
-                                      </div>
-                                    </>
-                                  )}
-
-                                  {/* Route Label Config */}
-                                  <p style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginTop: "14px", marginBottom: "8px" }}>Cấu hình nhãn tuyến</p>
-                                  
-                                  <div className="toggle-row">
-                                    <span>Hiển thị nhãn chữ trên tuyến</span>
-                                    <button
-                                      type="button"
-                                      className={`toggle-switch${route.labelShow ? " active" : ""}`}
-                                      onClick={() => updateRouteFieldAndSave(dest.id, route.id, "labelShow", !route.labelShow)}
-                                    />
-                                  </div>
-
-                                  {route.labelShow && (
-                                    <>
-                                      <div className="settings-field">
-                                        <label>Nội dung nhãn</label>
-                                        <input
-                                          type="text"
-                                          value={route.labelText || ""}
-                                          onChange={(e) => updateRouteField(dest.id, route.id, "labelText", e.target.value)} onBlur={handleSaveConfig}
-                                          placeholder={route.name}
-                                        />
-                                      </div>
-
-                                      <div className="settings-field">
-                                        <label>Cỡ chữ nhãn: {route.labelFontSize || 12}px</label>
-                                        <input
-                                          type="number"
-                                          min="8"
-                                          max="100"
-                                          value={route.labelFontSize || 12}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelFontSize", Number(e.target.value))}
-                                        />
-                                      </div>
-
-                                      <div className="settings-field">
-                                        <label>Màu chữ nhãn</label>
+                                        <label>Màu sắc</label>
                                         <div className="color-field">
                                           <input
                                             type="color"
-                                            value={route.labelTextColor || "#ffffff"}
-                                            onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelTextColor", e.target.value)}
+                                            value={route.color || "#4f46e5"}
+                                            onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "color", e.target.value)}
                                           />
                                           <input
                                             type="text"
-                                            value={route.labelTextColor || "#ffffff"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelTextColor", e.target.value)} onBlur={handleSaveConfig}
+                                            value={route.color || "#4f46e5"}
+                                            onChange={(e) => updateRouteField(dest.id, route.id, "color", e.target.value)} onBlur={handleSaveConfig}
                                           />
                                         </div>
                                       </div>
 
                                       <div className="settings-field">
-                                        <label>Màu nền nhãn</label>
-                                        <div className="color-field">
-                                          <input
-                                            type="color"
-                                            value={route.labelBgColor || "#4f46e5"}
-                                            onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelBgColor", e.target.value)}
-                                          />
-                                          <input
-                                            type="text"
-                                            value={route.labelBgColor || "#4f46e5"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBgColor", e.target.value)} onBlur={handleSaveConfig}
-                                          />
-                                        </div>
-                                      </div>
-
-                                      <div className="settings-field">
-                                        <label>Màu viền nhãn</label>
-                                        <div className="color-field">
-                                          <input
-                                            type="color"
-                                            value={route.labelBorderColor || "#312e81"}
-                                            onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelBorderColor", e.target.value)}
-                                          />
-                                          <input
-                                            type="text"
-                                            value={route.labelBorderColor || "#312e81"}
-                                            onChange={(e) => updateRouteField(dest.id, route.id, "labelBorderColor", e.target.value)} onBlur={handleSaveConfig}
-                                          />
-                                        </div>
-                                      </div>
-
-                                      <div className="settings-field">
-                                        <label>Độ mờ nhãn: {route.labelOpacity !== undefined ? route.labelOpacity : 1}</label>
+                                        <label>Độ dày nét vẽ: {route.weight || 5}px</label>
                                         <input
                                           type="range"
-                                          min="0"
-                                          max="1"
-                                          step="0.1"
-                                          value={route.labelOpacity !== undefined ? route.labelOpacity : 1}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelOpacity", Number(e.target.value))}
-                                        />
-                                      </div>
-
-                                      <div className="settings-field">
-                                        <label>Khoảng cách lặp lại nhãn: {route.labelSpacing || 300}px</label>
-                                        <input
-                                          type="number"
-                                          min="50"
-                                          max="2000"
-                                          value={route.labelSpacing || 300}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelSpacing", Number(e.target.value))}
-                                        />
-                                      </div>
-
-                                      <div className="settings-field">
-                                        <label>Zoom nhỏ nhất hiển thị nhãn: {route.labelMinZoom || 10}</label>
-                                        <input
-                                          type="number"
                                           min="1"
-                                          max="25"
-                                          value={route.labelMinZoom || 10}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelMinZoom", Number(e.target.value))}
+                                          max="20"
+                                          value={route.weight || 5}
+                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "weight", Number(e.target.value))}
                                         />
                                       </div>
 
-                                      <div className="settings-field">
-                                        <label>Zoom lớn nhất hiển thị nhãn: {route.labelMaxZoom || 20}</label>
-                                        <input
-                                          type="number"
-                                          min="1"
-                                          max="25"
-                                          value={route.labelMaxZoom || 20}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelMaxZoom", Number(e.target.value))}
+                                      <div className="toggle-row">
+                                        <span>Vẽ nét đứt (dashed)</span>
+                                        <button
+                                          type="button"
+                                          className={`toggle-switch${route.isDashed ? " active" : ""}`}
+                                          onClick={() => updateRouteFieldAndSave(dest.id, route.id, "isDashed", !route.isDashed)}
                                         />
                                       </div>
 
-                                      <div className="settings-field">
-                                        <label>Zoom bắt đầu hiển thị 1 nhãn duy nhất: {route.labelSingleZoom || 15}</label>
-                                        <input
-                                          type="number"
-                                          min="1"
-                                          max="25"
-                                          value={route.labelSingleZoom || 15}
-                                          onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelSingleZoom", Number(e.target.value))}
+                                      {route.isDashed && (
+                                        <>
+                                          <div className="settings-field">
+                                            <label>Chiều dài đoạn đứt: {route.dashLength || 10}px</label>
+                                            <input
+                                              type="range"
+                                              min="1"
+                                              max="30"
+                                              value={route.dashLength || 10}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "dashLength", Number(e.target.value))}
+                                            />
+                                          </div>
+                                          <div className="settings-field">
+                                            <label>Khoảng cách đoạn đứt: {route.dashSpace || 10}px</label>
+                                            <input
+                                              type="range"
+                                              min="1"
+                                              max="30"
+                                              value={route.dashSpace || 10}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "dashSpace", Number(e.target.value))}
+                                            />
+                                          </div>
+                                        </>
+                                      )}
+
+                                      {/* Route Label Config */}
+                                      <p style={{ fontSize: "11px", fontWeight: "600", textTransform: "uppercase", color: "var(--text-muted)", marginTop: "14px", marginBottom: "8px" }}>Cấu hình nhãn tuyến</p>
+                                      
+                                      <div className="toggle-row">
+                                        <span>Hiển thị nhãn chữ trên tuyến</span>
+                                        <button
+                                          type="button"
+                                          className={`toggle-switch${route.labelShow ? " active" : ""}`}
+                                          onClick={() => updateRouteFieldAndSave(dest.id, route.id, "labelShow", !route.labelShow)}
                                         />
                                       </div>
+
+                                      {route.labelShow && (
+                                        <>
+                                          <div className="settings-field">
+                                            <label>Nội dung nhãn</label>
+                                            <input
+                                              type="text"
+                                              value={route.labelText || ""}
+                                              onChange={(e) => updateRouteField(dest.id, route.id, "labelText", e.target.value)} onBlur={handleSaveConfig}
+                                              placeholder={route.name}
+                                            />
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Cỡ chữ nhãn: {route.labelFontSize || 12}px</label>
+                                            <input
+                                              type="number"
+                                              min="8"
+                                              max="100"
+                                              value={route.labelFontSize || 12}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelFontSize", Number(e.target.value))}
+                                            />
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Màu chữ nhãn</label>
+                                            <div className="color-field">
+                                              <input
+                                                type="color"
+                                                value={route.labelTextColor || "#ffffff"}
+                                                onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelTextColor", e.target.value)}
+                                              />
+                                              <input
+                                                type="text"
+                                                value={route.labelTextColor || "#ffffff"}
+                                                onChange={(e) => updateRouteField(dest.id, route.id, "labelTextColor", e.target.value)} onBlur={handleSaveConfig}
+                                              />
+                                            </div>
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Màu nền nhãn</label>
+                                            <div className="color-field">
+                                              <input
+                                                type="color"
+                                                value={route.labelBgColor || "#4f46e5"}
+                                                onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelBgColor", e.target.value)}
+                                              />
+                                              <input
+                                                type="text"
+                                                value={route.labelBgColor || "#4f46e5"}
+                                                onChange={(e) => updateRouteField(dest.id, route.id, "labelBgColor", e.target.value)} onBlur={handleSaveConfig}
+                                              />
+                                            </div>
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Màu viền nhãn</label>
+                                            <div className="color-field">
+                                              <input
+                                                type="color"
+                                                value={route.labelBorderColor || "#312e81"}
+                                                onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelBorderColor", e.target.value)}
+                                              />
+                                              <input
+                                                type="text"
+                                                value={route.labelBorderColor || "#312e81"}
+                                                onChange={(e) => updateRouteField(dest.id, route.id, "labelBorderColor", e.target.value)} onBlur={handleSaveConfig}
+                                              />
+                                            </div>
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Độ mờ nhãn: {route.labelOpacity !== undefined ? route.labelOpacity : 1}</label>
+                                            <input
+                                              type="range"
+                                              min="0"
+                                              max="1"
+                                              step="0.1"
+                                              value={route.labelOpacity !== undefined ? route.labelOpacity : 1}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelOpacity", Number(e.target.value))}
+                                            />
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Khoảng cách lặp lại nhãn: {route.labelSpacing || 300}px</label>
+                                            <input
+                                              type="number"
+                                              min="50"
+                                              max="2000"
+                                              value={route.labelSpacing || 300}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelSpacing", Number(e.target.value))}
+                                            />
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Zoom nhỏ nhất hiển thị nhãn: {route.labelMinZoom || 10}</label>
+                                            <input
+                                              type="number"
+                                              min="1"
+                                              max="25"
+                                              value={route.labelMinZoom || 10}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelMinZoom", Number(e.target.value))}
+                                            />
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Zoom lớn nhất hiển thị nhãn: {route.labelMaxZoom || 20}</label>
+                                            <input
+                                              type="number"
+                                              min="1"
+                                              max="25"
+                                              value={route.labelMaxZoom || 20}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelMaxZoom", Number(e.target.value))}
+                                            />
+                                          </div>
+
+                                          <div className="settings-field">
+                                            <label>Zoom bắt đầu hiển thị 1 nhãn duy nhất: {route.labelSingleZoom || 15}</label>
+                                            <input
+                                              type="number"
+                                              min="1"
+                                              max="25"
+                                              value={route.labelSingleZoom || 15}
+                                              onChange={(e) => updateRouteFieldAndSave(dest.id, route.id, "labelSingleZoom", Number(e.target.value))}
+                                            />
+                                          </div>
+                                        </>
+                                      )}
                                     </>
                                   )}
                                 </div>

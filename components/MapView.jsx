@@ -94,6 +94,13 @@ export default function MapView({
   const poiLabelsDataRef = useRef([]);
   const [lightboxData, setLightboxData] = useState(null);
   const [currentZoom, setCurrentZoom] = useState(15);
+  const [selectedRouteId, setSelectedRouteId] = useState("");
+  const [selectedRouteSegIdx, setSelectedRouteSegIdx] = useState(undefined);
+
+  useEffect(() => {
+    setSelectedRouteId("");
+    setSelectedRouteSegIdx(undefined);
+  }, [mode, selectedFeature]);
 
   // roadGraph is now received as a prop from page.js (computed once)
 
@@ -1141,134 +1148,233 @@ export default function MapView({
     routeLabelLayersRef.current = [];
 
     // Render segments in settings mode
-    if (mode === "settings" && activeRouteEdit) {
-      allGraphSegments.forEach((edge) => {
-        const selectedIdx = activeRouteEdit.segments?.findIndex(
-          (seg) => seg.featureId === edge.featureId && coordsMatch(seg.coords, edge.coords)
-        );
-        const isSelected = selectedIdx !== -1;
+    if (mode === "settings") {
+      if (activeRouteEdit) {
+        allGraphSegments.forEach((edge) => {
+          const selectedIdx = activeRouteEdit.segments?.findIndex(
+            (seg) => seg.featureId === edge.featureId && coordsMatch(seg.coords, edge.coords)
+          );
+          const isSelected = selectedIdx !== -1;
 
-        let routeColor = activeRouteEdit.color || "#ff3366";
-        let isDashed = activeRouteEdit.isDashed || false;
-        let dashLength = activeRouteEdit.dashLength || 10;
-        let dashSpace = activeRouteEdit.dashSpace || 10;
-        let routeWeight = activeRouteEdit.weight !== undefined ? activeRouteEdit.weight : 5;
+          let routeColor = activeRouteEdit.color || "#ff3366";
+          let isDashed = activeRouteEdit.isDashed || false;
+          let dashLength = activeRouteEdit.dashLength || 10;
+          let dashSpace = activeRouteEdit.dashSpace || 10;
+          let routeWeight = activeRouteEdit.weight !== undefined ? activeRouteEdit.weight : 5;
 
-        if (isSelected && activeRouteEdit.editPerSegment) {
-          const seg = activeRouteEdit.segments[selectedIdx];
-          routeColor = seg.color || activeRouteEdit.color || "#ff3366";
-          isDashed = seg.isDashed !== undefined ? seg.isDashed : (activeRouteEdit.isDashed || false);
-          dashLength = seg.dashLength || activeRouteEdit.dashLength || 10;
-          dashSpace = seg.dashSpace || activeRouteEdit.dashSpace || 10;
-          routeWeight = seg.weight !== undefined ? seg.weight : (activeRouteEdit.weight !== undefined ? activeRouteEdit.weight : 5);
-        }
-
-        const dashArrayString = isDashed ? `${dashLength}, ${dashSpace}` : null;
-        const isCurrentlyStyling = isSelected && activeRouteEdit.editPerSegment && activeRouteEdit.selectedSegmentIdx === selectedIdx;
-
-        // Visible line
-        const visiblePoly = L.polyline(edge.coords, {
-          color: isSelected ? routeColor : "#94a3b8",
-          weight: isCurrentlyStyling ? (routeWeight + 3) : (isSelected ? routeWeight : 3.5),
-          opacity: isSelected ? 0.95 : 0.6,
-          dashArray: isSelected ? dashArrayString : null,
-          interactive: false,
-        }).addTo(map);
-        routeLayersRef.current.push(visiblePoly);
-
-        // Interactive thick line on top
-        const interactivePoly = L.polyline(edge.coords, {
-          color: "transparent",
-          weight: 24,
-          interactive: true,
-        }).addTo(map);
-
-        interactivePoly.on("mouseover", () => {
-          if (!isSelected) {
-            visiblePoly.setStyle({ color: "#2563eb", weight: 5, opacity: 0.9 });
+          if (isSelected && activeRouteEdit.editPerSegment) {
+            const seg = activeRouteEdit.segments[selectedIdx];
+            routeColor = seg.color || activeRouteEdit.color || "#ff3366";
+            isDashed = seg.isDashed !== undefined ? seg.isDashed : (activeRouteEdit.isDashed || false);
+            dashLength = seg.dashLength || activeRouteEdit.dashLength || 10;
+            dashSpace = seg.dashSpace || activeRouteEdit.dashSpace || 10;
+            routeWeight = seg.weight !== undefined ? seg.weight : (activeRouteEdit.weight !== undefined ? activeRouteEdit.weight : 5);
           }
-        });
-        interactivePoly.on("mouseout", () => {
-          if (!isSelected) {
-            visiblePoly.setStyle({ color: "#94a3b8", weight: 3.5, opacity: 0.6 });
-          }
-        });
-        interactivePoly.on("click", (e) => {
-          L.DomEvent.stopPropagation(e);
-          handleSegmentClick(edge);
-        });
 
-        interactivePoly.addTo(map);
-        routeLayersRef.current.push(interactivePoly);
-      });
+          const dashArrayString = isDashed ? `${dashLength}, ${dashSpace}` : null;
+          const isCurrentlyStyling = isSelected && activeRouteEdit.editPerSegment && activeRouteEdit.selectedSegmentIdx === selectedIdx;
 
-      // Render labels for selected segments in settings mode
-      if (activeRouteEdit.segments && activeRouteEdit.segments.length > 0) {
-        const scale = getGentleScale(currentZoom, 16);
-        // Normalize segments list to have proper properties
-        const normalizedSegments = activeRouteEdit.segments.map((seg, idx) => {
-          if (activeRouteEdit.editPerSegment) {
-            return {
-              ...seg,
-              labelShow: seg.labelShow !== undefined ? seg.labelShow : false,
-              labelText: seg.labelText || seg.title || `Đoạn ${idx + 1}`,
-              labelFontSize: seg.labelFontSize || 12,
-              labelTextColor: seg.labelTextColor || "#1f2937",
-              labelBgColor: seg.labelBgColor || "#ffffff",
-              labelBorderColor: seg.labelBorderColor || "#4f46e5",
-              labelOpacity: seg.labelOpacity || 0.9,
-              labelSpacing: seg.labelSpacing !== undefined ? seg.labelSpacing : 300,
-              labelMinZoom: seg.labelMinZoom !== undefined ? seg.labelMinZoom : 11,
-              labelMaxZoom: seg.labelMaxZoom !== undefined ? seg.labelMaxZoom : 45,
-              labelSingleZoom: seg.labelSingleZoom !== undefined ? seg.labelSingleZoom : 13,
-            };
-          } else {
-            return {
-              ...seg,
-              labelShow: activeRouteEdit.labelShow !== undefined ? activeRouteEdit.labelShow : false,
-              labelText: activeRouteEdit.labelText || activeRouteEdit.title || "Tuyến đường",
-              labelFontSize: activeRouteEdit.labelFontSize || 12,
-              labelTextColor: activeRouteEdit.labelTextColor || "#1f2937",
-              labelBgColor: activeRouteEdit.labelBgColor || "#ffffff",
-              labelBorderColor: activeRouteEdit.labelBorderColor || "#4f46e5",
-              labelOpacity: activeRouteEdit.labelOpacity || 0.9,
-              labelSpacing: activeRouteEdit.labelSpacing !== undefined ? activeRouteEdit.labelSpacing : 300,
-              labelMinZoom: activeRouteEdit.labelMinZoom !== undefined ? activeRouteEdit.labelMinZoom : 11,
-              labelMaxZoom: activeRouteEdit.labelMaxZoom !== undefined ? activeRouteEdit.labelMaxZoom : 45,
-              labelSingleZoom: activeRouteEdit.labelSingleZoom !== undefined ? activeRouteEdit.labelSingleZoom : 13,
-            };
-          }
-        });
-
-        const labelMarkers = getRouteLabelMarkers(normalizedSegments, currentZoom);
-        const filteredLabels = filterCollidingLabels(map, labelMarkers, scale);
-        filteredLabels.forEach((ld) => {
-          const labelMarker = L.marker(ld.latlng, {
-            icon: L.divIcon({
-              html: `<div class="route-path-label-box" data-angle="${ld.angle}" style="
-                font-size: ${ld.fontSize}px;
-                color: ${ld.textColor};
-                background: ${ld.bgColor};
-                border: 1.5px solid ${ld.borderColor};
-                opacity: ${ld.opacity};
-                padding: 3px 6px;
-                border-radius: 4px;
-                font-weight: 700;
-                white-space: nowrap;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-                transform: translate(-50%, -50%) scale(${scale}) rotate(${ld.angle}deg);
-                pointer-events: none;
-                display: inline-block;
-                width: max-content;
-              ">${ld.text}</div>`,
-              className: "route-label-div-icon",
-              iconSize: [0, 0],
-              iconAnchor: [0, 0],
-            }),
+          // Visible line
+          const visiblePoly = L.polyline(edge.coords, {
+            color: isSelected ? routeColor : "#94a3b8",
+            weight: isCurrentlyStyling ? (routeWeight + 3) : (isSelected ? routeWeight : 3.5),
+            opacity: isSelected ? 0.95 : 0.6,
+            dashArray: isSelected ? dashArrayString : null,
             interactive: false,
           }).addTo(map);
-          routeLabelLayersRef.current.push(labelMarker);
+          routeLayersRef.current.push(visiblePoly);
+
+          // Interactive thick line on top
+          const interactivePoly = L.polyline(edge.coords, {
+            color: "transparent",
+            weight: 24,
+            interactive: true,
+          }).addTo(map);
+
+          interactivePoly.on("mouseover", () => {
+            if (!isSelected) {
+              visiblePoly.setStyle({ color: "#2563eb", weight: 5, opacity: 0.9 });
+            }
+          });
+          interactivePoly.on("mouseout", () => {
+            if (!isSelected) {
+              visiblePoly.setStyle({ color: "#94a3b8", weight: 3.5, opacity: 0.6 });
+            }
+          });
+          interactivePoly.on("click", (e) => {
+            L.DomEvent.stopPropagation(e);
+            handleSegmentClick(edge);
+          });
+
+          interactivePoly.addTo(map);
+          routeLayersRef.current.push(interactivePoly);
         });
+
+        // Render labels for selected segments in settings mode
+        if (activeRouteEdit.segments && activeRouteEdit.segments.length > 0) {
+          const scale = getGentleScale(currentZoom, 16);
+          // Normalize segments list to have proper properties
+          const normalizedSegments = activeRouteEdit.segments.map((seg, idx) => {
+            if (activeRouteEdit.editPerSegment) {
+              return {
+                ...seg,
+                labelShow: seg.labelShow !== undefined ? seg.labelShow : false,
+                labelText: seg.labelText || seg.title || `Đoạn ${idx + 1}`,
+                labelFontSize: seg.labelFontSize || 12,
+                labelTextColor: seg.labelTextColor || "#1f2937",
+                labelBgColor: seg.labelBgColor || "#ffffff",
+                labelBorderColor: seg.labelBorderColor || "#4f46e5",
+                labelOpacity: seg.labelOpacity || 0.9,
+                labelSpacing: seg.labelSpacing !== undefined ? seg.labelSpacing : 300,
+                labelMinZoom: seg.labelMinZoom !== undefined ? seg.labelMinZoom : 11,
+                labelMaxZoom: seg.labelMaxZoom !== undefined ? seg.labelMaxZoom : 45,
+                labelSingleZoom: seg.labelSingleZoom !== undefined ? seg.labelSingleZoom : 13,
+              };
+            } else {
+              return {
+                ...seg,
+                labelShow: activeRouteEdit.labelShow !== undefined ? activeRouteEdit.labelShow : false,
+                labelText: activeRouteEdit.labelText || activeRouteEdit.title || "Tuyến đường",
+                labelFontSize: activeRouteEdit.labelFontSize || 12,
+                labelTextColor: activeRouteEdit.labelTextColor || "#1f2937",
+                labelBgColor: activeRouteEdit.labelBgColor || "#ffffff",
+                labelBorderColor: activeRouteEdit.labelBorderColor || "#4f46e5",
+                labelOpacity: activeRouteEdit.labelOpacity || 0.9,
+                labelSpacing: activeRouteEdit.labelSpacing !== undefined ? activeRouteEdit.labelSpacing : 300,
+                labelMinZoom: activeRouteEdit.labelMinZoom !== undefined ? activeRouteEdit.labelMinZoom : 11,
+                labelMaxZoom: activeRouteEdit.labelMaxZoom !== undefined ? activeRouteEdit.labelMaxZoom : 45,
+                labelSingleZoom: activeRouteEdit.labelSingleZoom !== undefined ? activeRouteEdit.labelSingleZoom : 13,
+              };
+            }
+          });
+
+          const labelMarkers = getRouteLabelMarkers(normalizedSegments, currentZoom);
+          const filteredLabels = filterCollidingLabels(map, labelMarkers, scale);
+          filteredLabels.forEach((ld) => {
+            const labelMarker = L.marker(ld.latlng, {
+              icon: L.divIcon({
+                html: `<div class="route-path-label-box" data-angle="${ld.angle}" style="
+                  font-size: ${ld.fontSize}px;
+                  color: ${ld.textColor};
+                  background: ${ld.bgColor};
+                  border: 1.5px solid ${ld.borderColor};
+                  opacity: ${ld.opacity};
+                  padding: 3px 6px;
+                  border-radius: 4px;
+                  font-weight: 700;
+                  white-space: nowrap;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                  transform: translate(-50%, -50%) scale(${scale}) rotate(${ld.angle}deg);
+                  pointer-events: none;
+                  display: inline-block;
+                  width: max-content;
+                ">${ld.text}</div>`,
+                className: "route-label-div-icon",
+                iconSize: [0, 0],
+                iconAnchor: [0, 0],
+              }),
+              interactive: false,
+            }).addTo(map);
+            routeLabelLayersRef.current.push(labelMarker);
+          });
+        }
+      } else if (selectedRouteId) {
+        // Render current expanded route in settings mode
+        let settingsActiveRoute = null;
+        (overlays?.routingConfig?.destinations || []).forEach((d) => {
+          const r = (d.routes || []).find((route) => route.id === selectedRouteId);
+          if (r) {
+            settingsActiveRoute = { ...r, destId: d.id };
+          }
+        });
+
+        if (settingsActiveRoute && settingsActiveRoute.segments && settingsActiveRoute.segments.length > 0) {
+          settingsActiveRoute.segments.forEach((seg, idx) => {
+            const usePerSeg = settingsActiveRoute.editPerSegment;
+            const selectedIdx = idx;
+            const isCurrentlyStyling = usePerSeg && selectedRouteSegIdx === selectedIdx;
+
+            let routeColor = settingsActiveRoute.color || "#ff3366";
+            let isDashed = settingsActiveRoute.isDashed || false;
+            let dashLength = settingsActiveRoute.dashLength || 10;
+            let dashSpace = settingsActiveRoute.dashSpace || 10;
+            let routeWeight = settingsActiveRoute.weight !== undefined ? settingsActiveRoute.weight : 5;
+
+            if (usePerSeg) {
+              routeColor = seg.color || settingsActiveRoute.color || "#ff3366";
+              isDashed = seg.isDashed !== undefined ? seg.isDashed : (settingsActiveRoute.isDashed || false);
+              dashLength = seg.dashLength || settingsActiveRoute.dashLength || 10;
+              dashSpace = seg.dashSpace || settingsActiveRoute.dashSpace || 10;
+              routeWeight = seg.weight !== undefined ? seg.weight : (settingsActiveRoute.weight !== undefined ? settingsActiveRoute.weight : 5);
+            }
+
+            const dashArrayString = isDashed ? `${dashLength}, ${dashSpace}` : null;
+
+            const visiblePoly = L.polyline(seg.coords, {
+              color: routeColor,
+              weight: isCurrentlyStyling ? (routeWeight + 4) : routeWeight,
+              opacity: 0.95,
+              dashArray: dashArrayString,
+              interactive: false,
+            }).addTo(map);
+            routeLayersRef.current.push(visiblePoly);
+          });
+
+          // Render labels for the selected route segments
+          const scale = getGentleScale(currentZoom, 16);
+          settingsActiveRoute.segments.forEach((seg, idx) => {
+            const usePerSeg = settingsActiveRoute.editPerSegment;
+            const isLabelShow = usePerSeg ? (seg.labelShow !== undefined ? seg.labelShow : false) : (settingsActiveRoute.labelShow || false);
+            if (isLabelShow) {
+              const text = usePerSeg ? (seg.labelText || seg.title || `Đoạn ${idx + 1}`) : (settingsActiveRoute.labelText || settingsActiveRoute.name || `Đoạn ${idx + 1}`);
+              const textColor = usePerSeg ? (seg.labelTextColor || "#1f2937") : (settingsActiveRoute.labelTextColor || "#1f2937");
+              const bgColor = usePerSeg ? (seg.labelBgColor || "#ffffff") : (settingsActiveRoute.labelBgColor || "#ffffff");
+              const borderColor = usePerSeg ? (seg.labelBorderColor || "#4f46e5") : (settingsActiveRoute.labelBorderColor || "#4f46e5");
+              const fontSize = usePerSeg ? (seg.labelFontSize || 12) : (settingsActiveRoute.labelFontSize || 12);
+              const opacity = usePerSeg ? (seg.labelOpacity !== undefined ? seg.labelOpacity : 0.9) : (settingsActiveRoute.labelOpacity !== undefined ? settingsActiveRoute.labelOpacity : 0.9);
+              
+              if (seg.coords && seg.coords.length > 0) {
+                const midIdx = Math.floor(seg.coords.length / 2);
+                const latlng = seg.coords[midIdx];
+                
+                let angle = 0;
+                if (seg.coords.length >= 2) {
+                  const p1 = map.latLngToContainerPoint(seg.coords[0]);
+                  const p2 = map.latLngToContainerPoint(seg.coords[seg.coords.length - 1]);
+                  angle = Math.atan2(p2.y - p1.y, p2.x - p1.x) * (180 / Math.PI);
+                  if (angle > 90) angle -= 180;
+                  if (angle < -90) angle += 180;
+                }
+
+                const labelMarker = L.marker(latlng, {
+                  icon: L.divIcon({
+                    html: `<div class="route-path-label-box" data-angle="${angle}" style="
+                      font-size: ${fontSize}px;
+                      color: ${textColor};
+                      background: ${bgColor};
+                      border: 1.5px solid ${borderColor};
+                      opacity: ${opacity};
+                      padding: 3px 6px;
+                      border-radius: 4px;
+                      font-weight: 700;
+                      white-space: nowrap;
+                      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                      transform: translate(-50%, -50%) scale(${scale}) rotate(${angle}deg);
+                      pointer-events: none;
+                      display: inline-block;
+                      width: max-content;
+                    ">${text}</div>`,
+                    className: "route-label-div-icon",
+                    iconSize: [0, 0],
+                    iconAnchor: [0, 0],
+                  }),
+                  interactive: false,
+                }).addTo(map);
+                routeLabelLayersRef.current.push(labelMarker);
+              }
+            }
+          });
+        }
       }
     }
 
@@ -1280,7 +1386,7 @@ export default function MapView({
       routeLabelLayersRef.current.forEach((l) => map.removeLayer(l));
       routeLabelLayersRef.current = [];
     };
-  }, [mode, activeRouteEdit, allGraphSegments, handleSegmentClick, coordsMatch, currentZoom]);
+  }, [mode, activeRouteEdit, allGraphSegments, handleSegmentClick, coordsMatch, currentZoom, selectedRouteId, selectedRouteSegIdx, overlays]);
 
   // Render active destination route segments in View Mode
   useEffect(() => {
@@ -1605,6 +1711,10 @@ export default function MapView({
           geojson={geojson}
           selectingFeatureFor={selectingFeatureFor}
           onSelectingFeatureForChange={onSelectingFeatureForChange}
+          selectedRouteId={selectedRouteId}
+          onSelectedRouteIdChange={setSelectedRouteId}
+          selectedRouteSegIdx={selectedRouteSegIdx}
+          onSelectedRouteSegIdxChange={setSelectedRouteSegIdx}
         />
       )}
 
