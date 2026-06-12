@@ -9,7 +9,19 @@ export const revalidate = 0;
 
 // Helper to check if Supabase is configured
 function isSupabaseConfigured() {
-  return !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+  const url = (process.env.SUPABASE_URL || "").trim();
+  const key = (process.env.SUPABASE_ANON_KEY || "").trim();
+  return !!(url && key);
+}
+
+// Helper to get sanitized Supabase credentials
+function getSupabaseCredentials() {
+  let url = (process.env.SUPABASE_URL || "").trim().replace(/\/$/, "");
+  if (url && !/^https?:\/\//i.test(url)) {
+    url = `https://${url}`;
+  }
+  const key = (process.env.SUPABASE_ANON_KEY || "").trim();
+  return { url, key };
 }
 
 // GET method
@@ -31,8 +43,7 @@ export async function GET(request) {
     if (dbConfigured) {
       console.log("Supabase detected. Fetching overlays from database...");
       
-      const supabaseUrl = process.env.SUPABASE_URL.replace(/\/$/, "");
-      const supabaseKey = process.env.SUPABASE_ANON_KEY;
+      const { url: supabaseUrl, key: supabaseKey } = getSupabaseCredentials();
 
       const fetchUrl = `${supabaseUrl}/rest/v1/map_settings?id=eq.1&select=data`;
       const res = await fetch(fetchUrl, {
@@ -139,9 +150,13 @@ export async function GET(request) {
     
     return response;
   } catch (error) {
-    console.error("Error in GET /api/overlays:", error);
+    console.error("Error in GET /api/overlays:", error, error.cause);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: error.message,
+        cause: error.cause ? error.cause.message || String(error.cause) : undefined
+      },
       { status: 500 }
     );
   }
@@ -165,8 +180,7 @@ export async function POST(request) {
     if (dbConfigured) {
       console.log("Saving overlays to Supabase...");
       
-      const supabaseUrl = process.env.SUPABASE_URL.replace(/\/$/, "");
-      const supabaseKey = process.env.SUPABASE_ANON_KEY;
+      const { url: supabaseUrl, key: supabaseKey } = getSupabaseCredentials();
 
       const res = await fetch(`${supabaseUrl}/rest/v1/map_settings?on_conflict=id`, {
         method: "POST",
@@ -199,9 +213,13 @@ export async function POST(request) {
     response.headers.set("x-storage-mode", dbConfigured ? "supabase" : "local");
     return response;
   } catch (error) {
-    console.error("Error in POST /api/overlays:", error);
+    console.error("Error in POST /api/overlays:", error, error.cause);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { 
+        success: false, 
+        error: error.message,
+        cause: error.cause ? error.cause.message || String(error.cause) : undefined
+      },
       { status: 500 }
     );
   }
