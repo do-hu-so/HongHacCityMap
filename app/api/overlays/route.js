@@ -68,7 +68,7 @@ export async function GET(request) {
           data = bundledData;
 
           try {
-            await fetch(`${supabaseUrl}/rest/v1/map_settings`, {
+            const syncRes = await fetch(`${supabaseUrl}/rest/v1/map_settings?on_conflict=id`, {
               method: "POST",
               headers: {
                 apikey: supabaseKey,
@@ -82,6 +82,10 @@ export async function GET(request) {
                 updated_at: new Date().toISOString(),
               }),
             });
+            if (!syncRes.ok) {
+              const syncErrText = await syncRes.text();
+              throw new Error(`HTTP ${syncRes.status} - ${syncErrText}`);
+            }
             console.log("Supabase updated with newer bundled data.");
           } catch (syncError) {
             console.warn("Failed to sync database with newer bundled data:", syncError.message);
@@ -95,7 +99,7 @@ export async function GET(request) {
         data = bundledData;
 
         try {
-          await fetch(`${supabaseUrl}/rest/v1/map_settings`, {
+          const initRes = await fetch(`${supabaseUrl}/rest/v1/map_settings?on_conflict=id`, {
             method: "POST",
             headers: {
               apikey: supabaseKey,
@@ -109,6 +113,10 @@ export async function GET(request) {
               updated_at: new Date().toISOString(),
             }),
           });
+          if (!initRes.ok) {
+            const initErrText = await initRes.text();
+            throw new Error(`HTTP ${initRes.status} - ${initErrText}`);
+          }
           console.log("Supabase database successfully initialized.");
         } catch (initError) {
           console.error("Failed to initialize database:", initError.message);
@@ -160,7 +168,7 @@ export async function POST(request) {
       const supabaseUrl = process.env.SUPABASE_URL.replace(/\/$/, "");
       const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
-      const res = await fetch(`${supabaseUrl}/rest/v1/map_settings`, {
+      const res = await fetch(`${supabaseUrl}/rest/v1/map_settings?on_conflict=id`, {
         method: "POST",
         headers: {
           apikey: supabaseKey,
