@@ -6,6 +6,10 @@ import initialData from "./initial-overlays.json";
 
 // Force Next.js to run this route dynamically (never cache GET requests on Edge CDN)
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+// Global in-memory cache for the blob URL to minimize list operations
+let cachedBlobUrl = null;
 
 // Helper to check if Vercel Blob is configured
 function isBlobConfigured() {
@@ -13,34 +17,40 @@ function isBlobConfigured() {
 }
 
 // GET method
-export async function GET() {
+export async function GET(request) {
   try {
     const blobConfigured = isBlobConfigured();
     let data;
 
     if (blobConfigured) {
       console.log("Vercel Blob detected. Fetching overlays from blob storage...");
-      const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
       
-      // Filter all blobs starting with "overlays" and ending with ".json" (robust to random suffixes)
-      const overlaysBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json"));
+      // If we don't have the cached URL yet, list blobs to find it
+      if (!cachedBlobUrl) {
+        console.log("Blob URL cache miss. Listing blobs to find overlays.json...");
+        const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
+        const overlaysBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json"));
 
-      if (overlaysBlobs.length > 0) {
-        // Sort by uploadedAt descending to get the absolute newest version
-        overlaysBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-        const newestBlob = overlaysBlobs[0];
-        
-        console.log(`Fetching newest blob: ${newestBlob.url} (Uploaded at: ${newestBlob.uploadedAt})`);
-        
-        // Fetch public blob directly
-        const res = await fetch(newestBlob.url, { 
+        if (overlaysBlobs.length > 0) {
+          // Sort by uploadedAt descending to find the newest existing one (for transition)
+          overlaysBlobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+          cachedBlobUrl = overlaysBlobs[0].url;
+        }
+      }
+
+      if (cachedBlobUrl) {
+        // Fetch public blob directly using a query parameter cache buster
+        const fetchUrl = `${cachedBlobUrl}${cachedBlobUrl.includes("?") ? "&" : "?"}t=${Date.now()}`;
+        console.log(`Fetching newest blob: ${fetchUrl}`);
+        const res = await fetch(fetchUrl, { 
           cache: "no-store" 
         });
         
         if (res.ok) {
           data = await res.json();
         } else {
-          // Instead of silently overwriting the blob, throw an error so we know why it failed
+          // Reset cache if fetching fails so we attempt listing again on next request
+          cachedBlobUrl = null;
           throw new Error(
             `Failed to fetch overlays.json from Vercel Blob (Status: ${res.status}). ` +
             `This usually happens if the Vercel Blob store is set to Private. ` +
@@ -59,17 +69,22 @@ export async function GET() {
           data = initialData;
 
           try {
-            // Delete all old overlay blobs
-            if (overlaysBlobs.length > 0) {
-              await del(overlaysBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });
-            }
-            // Upload new merged data
-            await put("overlays.json", JSON.stringify(data, null, 2), {
+            // Upload new merged data directly (without random suffix to overwrite overlays.json)
+            const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
               access: "public",
-              addRandomSuffix: true,
+              addRandomSuffix: false,
               token: process.env.BLOB_READ_WRITE_TOKEN,
             });
+            cachedBlobUrl = newBlob.url;
             console.log("Blob storage updated with converted data.");
+
+            // Clean up any old suffix-based blobs that might be left in storage
+            const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
+            const oldSuffixBlobs = blobs.filter(b => b.pathname.startsWith("overlays") && b.pathname.endsWith(".json") && b.url !== newBlob.url);
+            if (oldSuffixBlobs.length > 0) {
+              console.log(`Cleaning up ${oldSuffixBlobs.length} older suffix-based blobs...`);
+              await del(oldSuffixBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });
+            }
           } catch (syncError) {
             console.warn("Failed to sync blob with converted data:", syncError.message);
           }
@@ -81,12 +96,13 @@ export async function GET() {
         console.log("Overlays blob not found in store. Initializing Vercel Blob storage with static initial-overlays.json...");
         data = initialData;
 
-        // Use access: "public" for the user's public Vercel Blob store
-        await put("overlays.json", JSON.stringify(data, null, 2), {
+        // Use addRandomSuffix: false to maintain a single overlays.json file
+        const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
           access: "public",
-          addRandomSuffix: true,
+          addRandomSuffix: false,
           token: process.env.BLOB_READ_WRITE_TOKEN,
         });
+        cachedBlobUrl = newBlob.url;
       }
     } else {
       // Development Mode: Read from local filesystem to allow live changes from convert script
@@ -106,7 +122,9 @@ export async function GET() {
     // Add debug headers to help the user diagnose token configuration
     response.headers.set("x-storage-mode", blobConfigured ? "vercel-blob" : "local");
     response.headers.set("x-blob-token-present", process.env.BLOB_READ_WRITE_TOKEN ? "yes" : "no");
-    response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    response.headers.set("Pragma", "no-cache");
+    response.headers.set("Expires", "0");
     
     return response;
   } catch (error) {
@@ -135,33 +153,17 @@ export async function POST(request) {
     if (blobConfigured) {
       console.log("Saving overlays to Vercel Blob...");
       
-      // 1. Upload new overlays.json. Using random suffix (default) is critical to bust Edge and browser cache.
-      // Use access: "private" to remain compatible with private stores.
-      // Explicitly set addRandomSuffix: true to prevent "This blob already exists" error.
+      // Upload directly overwriting the same overlays.json file
       const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
         access: "public",
-        addRandomSuffix: true,
+        addRandomSuffix: false,
         token: process.env.BLOB_READ_WRITE_TOKEN,
       });
+      cachedBlobUrl = newBlob.url;
       console.log(`Saved new overlays blob at: ${newBlob.url}`);
 
-      // 2. Clean up old overlays.json blobs asynchronously to free up Vercel storage space
-      try {
-        const { blobs } = await list({ prefix: "overlays", token: process.env.BLOB_READ_WRITE_TOKEN });
-        // Correct filter pattern matching random suffixes (starts with overlays, ends with .json)
-        const oldBlobs = blobs.filter(
-          (b) =>
-            b.pathname.startsWith("overlays") &&
-            b.pathname.endsWith(".json") &&
-            b.url !== newBlob.url
-        );
-        if (oldBlobs.length > 0) {
-          console.log(`Deleting ${oldBlobs.length} stale overlays blobs...`);
-          await del(oldBlobs.map(b => b.url), { token: process.env.BLOB_READ_WRITE_TOKEN });
-        }
-      } catch (delError) {
-        console.warn("Failed to delete stale overlays blobs (non-fatal):", delError.message);
-      }
+      // We do not need to list and delete old files on every save since addRandomSuffix: false overwrites overlays.json.
+      // This saves 2 Vercel Blob API operations per write request!
     } else {
       // If we are on Vercel, we cannot write to the read-only filesystem.
       // Throw a helpful error instead of letting it fail with EROFS.
