@@ -12315,26 +12315,6 @@
     ]
   },
   "_convertedAt": "2026-06-12T03:35:30.592Z",
-  "poiLabels": [
-    {
-      "id": "poi-1781283892334",
-      "name": "Test Location 123",
-      "address": "Mô tả địa chỉ...",
-      "position": [
-        21.020572589573415,
-        106.0217674322509
-      ],
-      "poiType": "bridge.svg",
-      "iconUrl": "/icons/bridge.svg",
-      "visibilityMode": "always",
-      "associatedRouteId": "",
-      "labelMinZoom": 11,
-      "labelMaxZoom": 45,
-      "labelFontSize": 12,
-      "iconSize": 40,
-      "description": "",
-      "images": [],
-      "color": "#10b981"
-    }
-  ]
+  "poiLabels": [],
+  "_updatedAt": "2026-06-12T17:50:48.536Z"
 }
