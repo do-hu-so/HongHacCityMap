@@ -73,6 +73,7 @@ export async function GET(request) {
             const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
               access: "public",
               addRandomSuffix: false,
+              allowOverwrite: true,
               token: process.env.BLOB_READ_WRITE_TOKEN,
             });
             cachedBlobUrl = newBlob.url;
@@ -100,6 +101,7 @@ export async function GET(request) {
         const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
           access: "public",
           addRandomSuffix: false,
+          allowOverwrite: true,
           token: process.env.BLOB_READ_WRITE_TOKEN,
         });
         cachedBlobUrl = newBlob.url;
@@ -157,6 +159,7 @@ export async function POST(request) {
       const newBlob = await put("overlays.json", JSON.stringify(data, null, 2), {
         access: "public",
         addRandomSuffix: false,
+        allowOverwrite: true,
         token: process.env.BLOB_READ_WRITE_TOKEN,
       });
       cachedBlobUrl = newBlob.url;
